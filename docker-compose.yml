@@ -5,13 +5,20 @@ services:
     image: myapi
     build:
       context: ./WebAPI
-    ports:
-      - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=mysql;Database=mydatabase;User=root;Password=yourpassword;
     depends_on:
       - mysql
+
+  webreact:
+    build:
+      context: ./WebReact
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - myapi
 
   mysql:
     image: mysql:8.0
