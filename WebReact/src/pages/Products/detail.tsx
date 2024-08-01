@@ -13,7 +13,7 @@ interface Product {
 const ProductDetail: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [_, params] = useRoute('/products/:id');
+  const [, params] = useRoute('/products/:id');
 
   useEffect(() => {
     if (params && params.id) {

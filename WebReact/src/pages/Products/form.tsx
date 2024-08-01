@@ -13,8 +13,8 @@ const ProductForm: React.FC = () => {
   const [product, setProduct] = useState<Product>({ name: '', price: 0 });
   const [id, setId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [_l, setLocation] = useLocation();
-  const [_, params] = useRoute('/products/:id');
+  const [, setLocation] = useLocation();
+  const [, params] = useRoute('/products/:id');
 
   useEffect(() => {
     if (params && params.id) {
