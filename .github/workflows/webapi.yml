@@ -1,0 +1,33 @@
+name: .NET CI
+
+on:
+  push:
+    paths:
+      - 'WebAPI/WebAPI/**'
+  pull_request:
+    paths:
+      - 'WebAPI/WebAPI/**'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: cd WebAPI/WebAPI/ && dotnet restore
+
+    - name: Build
+      run: cd WebAPI/WebAPI/ && dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: cd WebAPI/WebAPI/ && dotnet test --no-restore --verbosity normal
+
