@@ -2,19 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRoute, useLocation } from 'wouter';
-
-interface Product {
-  id?: number;
-  name: string;
-  price: number;
-}
+import { Product } from './types/Product';
 
 const ProductForm: React.FC = () => {
   const [product, setProduct] = useState<Product>({ name: '', price: 0 });
   const [id, setId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, setLocation] = useLocation();
-  const [, params] = useRoute('/products/:id');
+  const [, params] = useRoute('/products/edit/:id');
 
   useEffect(() => {
     if (params && params.id) {
@@ -23,7 +18,7 @@ const ProductForm: React.FC = () => {
         .then(response => setProduct(response.data))
         .catch(err => setError(err.message));
     }
-  }, [params]);
+  }, [params?.id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProduct({ ...product, [e.target.name]: e.target.value });

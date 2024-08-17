@@ -3,17 +3,14 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useRoute } from 'wouter';
 import { Link } from 'wouter';
+import { Product } from './types/Product';
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-}
 
 const ProductDetail: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, params] = useRoute('/products/:id');
+
 
   useEffect(() => {
     if (params && params.id) {
@@ -21,7 +18,7 @@ const ProductDetail: React.FC = () => {
         .then(response => setProduct(response.data))
         .catch(err => setError(err.message));
     }
-  }, [params]);
+  }, [params?.id]);
 
   const handleDelete = () => {
     if (product) {
@@ -41,7 +38,7 @@ const ProductDetail: React.FC = () => {
       <h1>Product Details</h1>
       <p>Name: {product.name}</p>
       <p>Price: ${product.price.toFixed(2)}</p>
-      <Link href={`/products/${product.id}/edit`}>Edit</Link>
+      <Link href={`/products/edit/${product.id}`}>Edit</Link>
       <button onClick={handleDelete}>Delete</button>
     </div>
   );

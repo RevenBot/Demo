@@ -2,12 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'wouter';
+import { Product } from './types/Product';
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-}
 
 const ProductList: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
