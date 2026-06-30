@@ -50,13 +50,8 @@ namespace WebAPI.Services
                 restaurantToUpdate.cuisine = restaurant.cuisine;
                 restaurantToUpdate.borough = restaurant.borough;
 
-                _restaurantDbContext.Restaurants.Update(restaurantToUpdate);
-
                 _restaurantDbContext.ChangeTracker.DetectChanges();
-                Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-
                 _restaurantDbContext.SaveChanges();
-
             }
             else
             {

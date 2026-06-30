@@ -58,12 +58,8 @@ namespace WebAPI.Services
             {
                 reservationToUpdate.date = updatedReservation.date;
 
-                _restaurantDbContext.Reservations.Update(reservationToUpdate);
-
                 _restaurantDbContext.ChangeTracker.DetectChanges();
                 _restaurantDbContext.SaveChanges();
-
-                Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
             }
             else
             {

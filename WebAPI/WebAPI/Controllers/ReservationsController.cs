@@ -44,14 +44,26 @@ namespace WebAPI.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutReservation(ObjectId id, Reservation restaurant)
+        public async Task<IActionResult> PutReservation(ObjectId id, Reservation? restaurant)
         {
-            if (id != restaurant.Id)
+            if (restaurant == null)
             {
-                return BadRequest();
+                return BadRequest("Request body is required and must contain a valid reservation.");
             }
 
-            _ReservationService.EditReservation(restaurant);
+            if (id != restaurant.Id)
+            {
+                return BadRequest("URL id does not match reservation Id.");
+            }
+
+            try
+            {
+                _ReservationService.EditReservation(restaurant);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
 
             return Ok();
         }
@@ -66,11 +78,6 @@ namespace WebAPI.Controllers
             }
             _ReservationService.DeleteReservation(product);
             return Ok();
-        }
-
-        private bool ProductExists(int id)
-        {
-            return false;
         }
 
     }

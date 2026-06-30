@@ -60,7 +60,6 @@ namespace WebAPI.Controllers
         public async Task<IActionResult> DeleteRestaurant(ObjectId id)
         {
             var product = _RestaurantService.GetRestaurantById(id);
-            product.Id.ToString();
             if(product is null)
             {
                 return NotFound();
@@ -69,9 +68,5 @@ namespace WebAPI.Controllers
             return Ok();
         }
 
-        private bool ProductExists(int id)
-        {
-            return false;
-        }
     }
 }
