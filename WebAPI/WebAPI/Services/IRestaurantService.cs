@@ -1,12 +1,11 @@
-﻿using MongoDB.Bson;
-using WebAPI.Models;
+﻿using WebAPI.Models;
 
 namespace WebAPI.Services
 {
     public interface IRestaurantService
     {
         IEnumerable<Restaurant> GetAllRestaurants();
-        Restaurant? GetRestaurantById(ObjectId id);
+        Restaurant? GetRestaurantById(string id);
 
         void AddRestaurant(Restaurant newRestaurant);
 

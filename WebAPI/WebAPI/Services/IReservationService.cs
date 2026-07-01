@@ -1,12 +1,11 @@
-﻿using MongoDB.Bson;
-using WebAPI.Models;
+﻿using WebAPI.Models;
 
 namespace WebAPI.Services
 {
     public interface IReservationService
     {
         IEnumerable<Reservation> GetAllReservations();
-        Reservation? GetReservationById(ObjectId id);
+        Reservation? GetReservationById(string id);
 
         void AddReservation(Reservation newReservation);
 
