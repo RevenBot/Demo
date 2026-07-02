@@ -1,0 +1,159 @@
+using WebAPI.Data;
+using WebAPI.Models;
+using WebAPI.Services;
+using Microsoft.EntityFrameworkCore;
+using Xunit;
+
+namespace WebAPI.Tests.Services;
+
+public class ProductServiceTests : IDisposable
+{
+    private readonly string _dbName = $"TestDb_{Guid.NewGuid():N}";
+    private ApplicationDbContext? _context;
+
+    public ProductServiceTests()
+    {
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(databaseName: _dbName)
+            .Options;
+        _context = new ApplicationDbContext(options);
+    }
+
+    private void ReloadContext()
+    {
+        _context!.Dispose();
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(databaseName: _dbName)
+            .Options;
+        _context = new ApplicationDbContext(options);
+    }
+
+    public void Dispose()
+    {
+        _context?.Database.EnsureDeleted();
+        _context?.Dispose();
+    }
+
+    [Fact]
+    public async Task Add_Product_ShouldInsertIntoDatabase()
+    {
+        // Arrange
+        var service = new ProductService(_context!);
+        var product = new Product { Name = "Test Product", Price = 9.99m };
+
+        // Act
+        service.Add(product);
+        
+        // Assert
+        var saved = await _context!.Products.FindAsync(product.Id);
+        Assert.NotNull(saved);
+        Assert.Equal("Test Product", saved!.Name);
+        Assert.Equal(9.99m, saved.Price);
+    }
+
+    [Fact]
+    public async Task GetAll_ShouldReturnAllProducts()
+    {
+        // Arrange
+        await _context!.Products.AddRangeAsync(
+            new Product { Name = "Product A", Price = 10m },
+            new Product { Name = "Product B", Price = 20m }
+        );
+        await _context.SaveChangesAsync();
+
+        var service = new ProductService(_context!);
+
+        // Act
+        var products = service.GetAll().ToList();
+
+        // Assert
+        Assert.Equal(2, products.Count);
+    }
+
+    [Fact]
+    public void GetById_ShouldReturnProduct_WhenExists()
+    {
+        // Arrange
+        var expected = new Product { Name = "Found Product", Price = 15m };
+        _context!.Products.Add(expected);
+        _context.SaveChanges();
+        ReloadContext();
+
+        var service = new ProductService(_context!);
+
+        // Act
+        var result = service.GetById(expected.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Found Product", result!.Name);
+    }
+
+    [Fact]
+    public void GetById_ShouldReturnNull_WhenDoesNotExist()
+    {
+        // Arrange
+        ReloadContext();
+        var service = new ProductService(_context!);
+
+        // Act
+        var result = service.GetById(999);
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void Update_Product_ShouldModifyExistingProduct()
+    {
+        // Arrange
+        var product = new Product { Name = "Old Name", Price = 5m };
+        _context!.Products.Add(product);
+        _context.SaveChanges();
+        ReloadContext();
+
+        var service = new ProductService(_context!);
+        
+        // Act
+        product.Name = "New Name";
+        product.Price = 10m;
+        service.Update(product);
+
+        // Assert
+        var updated = _context!.Products.Find(product.Id);
+        Assert.NotNull(updated);
+        Assert.Equal("New Name", updated!.Name);
+        Assert.Equal(10m, updated.Price);
+    }
+
+    [Fact]
+    public void Delete_Product_ShouldRemoveFromDatabase()
+    {
+        // Arrange
+        var product = new Product { Name = "To Delete", Price = 7.5m };
+        _context!.Products.Add(product);
+        _context.SaveChanges();
+        ReloadContext();
+
+        var service = new ProductService(_context!);
+
+        // Act
+        service.Delete(product.Id);
+
+        // Assert
+        var deleted = _context!.Products.Find(product.Id);
+        Assert.Null(deleted);
+    }
+
+    [Fact]
+    public void Delete_NonExistentProduct_ShouldNotThrow()
+    {
+        // Arrange
+        ReloadContext();
+        var service = new ProductService(_context!);
+
+        // Act & Assert - should not throw
+        var ex = Record.Exception(() => service.Delete(999));
+        Assert.Null(ex);
+    }
+}

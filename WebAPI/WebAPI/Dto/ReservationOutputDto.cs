@@ -4,7 +4,7 @@ public class ReservationOutputDto
 {
     public string Id { get; set; } = "";
 
-    public string? RestaurantId { get; set; }
+    public string RestaurantId { get; set; } = "";
 
     public string? RestaurantName { get; set; }
 
