@@ -1,4 +1,4 @@
-name: 
+name: Web React CI
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - 'WebReact/**'
   pull_request:
     paths:
-      - 'path/to/nodejs/**'
+      - 'WebReact/**'
 
 jobs:
   build:
@@ -15,10 +15,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v5
       with:
         node-version: '18'
 
