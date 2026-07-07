@@ -11,27 +11,26 @@ namespace WebAPI.Models
     public class Restaurant
     {
 
+        // Primary key - string for URL/API convenience, stored as native ObjectId in DB
         [BsonId]
-        public ObjectId Id { get; set; }
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+
         [Required(ErrorMessage = "You must provide a name")]
         [Display(Name = "Name")]
-        public string? name { get; set; }
-
+        [BsonElement("name")]
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
 
         [Required(ErrorMessage = "You must add a cuisine type")]
         [Display(Name = "Cuisine")]
-        public string? cuisine { get; set; }
-
+        [BsonElement("cuisine")]
+        [JsonPropertyName("cuisine")]
+        public string? Cuisine { get; set; }
 
         [Required(ErrorMessage = "You must add the borough of the restaurant")]
-        public string? borough { get; set; }
-        [JsonPropertyName("_id")]
-        public string _Id
-        {
-            get
-            {
-                return Id.ToString();
-            }
-        }
+        [BsonElement("borough")]
+        [JsonPropertyName("borough")]
+        public string? Borough { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 using MongoDB.Bson;
 using WebAPI.Models;
 using WebAPI.Services;
+using WebAPI.Dto;
 
 namespace WebAPI.Controllers
 {
@@ -9,69 +10,110 @@ namespace WebAPI.Controllers
     [ApiController]
     public class RestaurantsController : Controller
     {
-        private readonly IRestaurantService _RestaurantService;
+        private readonly IRestaurantService _restaurantService;
 
-        public RestaurantsController(IRestaurantService RestaurantService)
+        public RestaurantsController(IRestaurantService restaurantService)
         {
-            _RestaurantService = RestaurantService;
+            _restaurantService = restaurantService;
         }
+        
+        // GET /api/restaurants - returns list of restaurants with id fields
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Restaurant>>> GetRestaurants()
+        public async Task<ActionResult<PagedResult<RestaurantOutputDto>>> GetRestaurants([FromQuery] PaginationParamsDto paramsDto)
         {
-            return await Task.FromResult( _RestaurantService.GetAllRestaurants().ToList());
+            int skip = (paramsDto.PageNumber - 1) * paramsDto.PageSize;
+            
+            var result = await _restaurantService.GetAllRestaurantsAsync(skip, paramsDto.PageSize);
+
+            return Ok(new PagedResult<RestaurantOutputDto>
+            {
+                Items = result.Items.Select(r => new RestaurantOutputDto
+                {
+                    Id = r.Id,
+                    Name = r.Name,
+                    Cuisine = r.Cuisine,
+                    Borough = r.Borough
+                }),
+                TotalCount = result.TotalCount,
+                PageSize = result.PageSize,
+                CurrentPage = result.CurrentPage
+            });
         }
 
+        // GET /api/restaurants/{id} - returns single restaurant with id field
         [HttpGet("{id}")]
-        public async Task<ActionResult<Restaurant>> GetRestaurant(ObjectId id)
+        public async Task<ActionResult<RestaurantOutputDto>> GetRestaurant(string id)
         {
-            var product = _RestaurantService.GetRestaurantById(id);
-            if(product is null)
-            {
-                return NotFound();
-            }
+            var restaurant = await _restaurantService.GetRestaurantByIdAsync(id);
+            if (restaurant is null) return NotFound();
 
-            return await Task.FromResult(product);
+            return Ok(new RestaurantOutputDto
+            {
+                Id = restaurant.Id,
+                Name = restaurant.Name,
+                Cuisine = restaurant.Cuisine,
+                Borough = restaurant.Borough
+            });
         }
 
+        // POST /api/restaurants - no id in input (server auto-generates)
         [HttpPost]
-        public async Task<ActionResult<Restaurant>> PostRestaurant(Restaurant restaurant)
+        public async Task<ActionResult<RestaurantOutputDto>> PostRestaurant(RestaurantInputDto input)
         {
-            _RestaurantService.AddRestaurant(restaurant);
+            var restaurant = new Restaurant
+            {
+                Name = input.Name,
+                Cuisine = input.Cuisine,
+                Borough = input.Borough
+            };
 
-            await Task.CompletedTask;
+            var created = await _restaurantService.AddRestaurantAsync(restaurant);
 
-            return CreatedAtAction("GetRestaurant", new { id = restaurant.Id }, restaurant);
+            return CreatedAtAction("GetRestaurant", 
+                new { id = created.Id }, 
+                new RestaurantOutputDto
+                {
+                    Id = created.Id,
+                    Name = created.Name,
+                    Cuisine = created.Cuisine,
+                    Borough = created.Borough
+                });
         }
 
+        // PUT /api/restaurants/{id} - updates via string path param (no id in body)
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateRestaurant(ObjectId id, Restaurant restaurant)
+        public async Task<IActionResult> UpdateRestaurant(string id, [FromBody] RestaurantInputDto input)
         {
-            if (id != restaurant.Id)
+            var existing = await _restaurantService.GetRestaurantByIdAsync(id);
+            if (existing is null) return NotFound();
+
+            if (!string.IsNullOrEmpty(input.Name))
+                existing.Name = input.Name;
+            if (!string.IsNullOrEmpty(input.Cuisine))
+                existing.Cuisine = input.Cuisine;
+            if (!string.IsNullOrEmpty(input.Borough))
+                existing.Borough = input.Borough;
+
+            var updated = await _restaurantService.EditRestaurantAsync(existing);
+
+            return Ok(new RestaurantOutputDto
             {
-                return BadRequest();
-            }
-
-            _RestaurantService.EditRestaurant(restaurant);
-
-            return Ok();
+                Id = updated.Id,
+                Name = updated.Name,
+                Cuisine = updated.Cuisine,
+                Borough = updated.Borough
+            });
         }
 
+        // DELETE /api/restaurants/{id} - deletes via string path param
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteRestaurant(ObjectId id)
+        public async Task<IActionResult> DeleteRestaurant(string id)
         {
-            var product = _RestaurantService.GetRestaurantById(id);
-            product.Id.ToString();
-            if(product is null)
-            {
-                return NotFound();
-            }
-            _RestaurantService.DeleteRestaurant(product);
-            return Ok();
-        }
+            var restaurant = await _restaurantService.GetRestaurantByIdAsync(id);
+            if (restaurant is null) return NotFound();
 
-        private bool ProductExists(int id)
-        {
-            return false;
+            await _restaurantService.DeleteRestaurantAsync(restaurant);
+            return Ok();
         }
     }
 }

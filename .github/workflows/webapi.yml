@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - 'WebAPI/WebAPI/**'
+      - 'WebAPI/WebAPI.Tests/**'
   pull_request:
     paths:
       - 'WebAPI/WebAPI/**'
+      - 'WebAPI/WebAPI.Tests/**'
 
 jobs:
   build:
@@ -15,19 +17,19 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: cd WebAPI/WebAPI/ && dotnet restore
+      run: dotnet restore WebAPI/WebAPI.sln
 
     - name: Build
-      run: cd WebAPI/WebAPI/ && dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore WebAPI/WebAPI.sln
 
     - name: Test
-      run: cd WebAPI/WebAPI/ && dotnet test --no-restore --verbosity normal
+      run: dotnet test WebAPI/WebAPI.Tests/WebAPI.Tests.csproj --verbosity normal
 
