@@ -28,39 +28,53 @@ public class ProductsControllerTests
             new Product { Id = 1, Name = "Laptop", Price = 999m },
             new Product { Id = 2, Name = "Mouse", Price = 25m }
         };
-        _mockService.Setup(s => s.GetAll()).Returns(products.AsEnumerable);
+        _mockService.Setup(s => s.GetAll(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Product>
+        {
+            Items = products,
+            TotalCount = 2,
+            PageSize = 10,
+            CurrentPage = 1
+        });
 
         // Act
-        var result = await _controller.GetProducts();
+        var result = await _controller.GetProducts(new PaginationParamsDto());
 
         // Assert
         Assert.NotNull(result.Result);
         var okResult = result.Result as OkObjectResult;
         Assert.NotNull(okResult);
-        
-        var dtos = okResult!.Value as IEnumerable<ProductOutputDto>;
-        Assert.NotNull(dtos);
-        var dtoList = dtos.ToList();
-        Assert.Equal(2, dtoList.Count);
-        Assert.Equal("1", dtoList[0].Id);
-        Assert.Equal("Laptop", dtoList[0].Name);
+
+        var pagedResult = okResult!.Value as PagedResult<ProductOutputDto>;
+        Assert.NotNull(pagedResult);
+        Assert.Equal(2, pagedResult.TotalCount);
+        Assert.Equal(10, pagedResult.PageSize);
+        Assert.Equal(2, pagedResult.Items.Count());
+        Assert.Equal("1", pagedResult.Items.First().Id);
+        Assert.Equal("Laptop", pagedResult.Items.First().Name);
     }
     [Fact]
     public async Task GetProducts_ShouldReturnEmptyList_WhenNoProducts()
     {
         // Arrange
-        _mockService.Setup(s => s.GetAll()).Returns(new List<Product>().AsEnumerable);
+        _mockService.Setup(s => s.GetAll(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Product>
+        {
+            Items = new List<Product>(),
+            TotalCount = 0,
+            PageSize = 10,
+            CurrentPage = 1
+        });
 
         // Act
-        var result = await _controller.GetProducts();
+        var result = await _controller.GetProducts(new PaginationParamsDto());
 
         // Assert
         var okResult = result.Result as OkObjectResult;
         Assert.NotNull(okResult);
-        
-        var dtos = okResult!.Value as IEnumerable<ProductOutputDto>;
-        Assert.NotNull(dtos);
-        Assert.Empty(dtos!);
+
+        var pagedResult = okResult!.Value as PagedResult<ProductOutputDto>;
+        Assert.NotNull(pagedResult);
+        Assert.Equal(0, pagedResult.TotalCount);
+        Assert.Empty(pagedResult.Items.ToList());
     }
 
     [Fact]
@@ -101,15 +115,9 @@ public class ProductsControllerTests
     public async Task PostProduct_ShouldReturnCreatedAtAction()
     {
         // Arrange
-        var inputDto = new ProductInputDto 
-        { 
-            Name = "New Chair", 
-            Price = 150m 
-        };
-        
-        string? capturedId = null;
-        _mockService.Setup(s => s.Add(It.IsAny<Product>()))
-                    .Callback<Product>(p => capturedId = p.Id.ToString());
+        var inputDto = new ProductInputDto { Name = "New Chair", Price = 150m };
+        var addedProduct = new Product { Id = 1, Name = "New Chair", Price = 150m };
+        _mockService.Setup(s => s.Add(It.IsAny<Product>())).Returns(addedProduct);
 
         // Act
         var result = await _controller.PostProduct(inputDto);
@@ -122,9 +130,9 @@ public class ProductsControllerTests
         var dto = createdResult.Value as ProductOutputDto;
         Assert.NotNull(dto);
 
-        Assert.Equal(capturedId, dto.Id);
-        Assert.Equal(inputDto.Name, dto.Name);
-        Assert.Equal(inputDto.Price, dto.Price);
+        Assert.Equal("1", dto.Id);
+        Assert.Equal("New Chair", dto.Name);
+        Assert.Equal(150m, dto.Price);
     }
 
     [Fact]
@@ -143,7 +151,7 @@ public class ProductsControllerTests
         var result = await _controller.PutProduct("5", input);
 
         // Assert
-        Assert.IsType<NotFoundResult>(result);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
@@ -157,6 +165,7 @@ public class ProductsControllerTests
             Price = 10m 
         };
         _mockService.Setup(s => s.GetById(1)).Returns(existing);
+        _mockService.Setup(s => s.Update(It.IsAny<Product>())).Returns(existing);
 
         var input = new ProductInputDto 
         { 
@@ -168,7 +177,12 @@ public class ProductsControllerTests
         var result = await _controller.PutProduct("1", input);
 
         // Assert
-        Assert.IsType<OkResult>(result);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        
+        var dto = okResult.Value as ProductOutputDto;
+        Assert.NotNull(dto);
+        Assert.Equal("1", dto.Id);
+        Assert.Equal("Updated", dto.Name);
         
         // Verify Update was called
         _mockService.Verify(s => s.Update(It.IsAny<Product>()), Times.Once);

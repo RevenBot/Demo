@@ -17,18 +17,27 @@ namespace WebAPI.Controllers
             _reservationService = reservationService;
         }
         
-        // GET /api/reservations - returns list of reservations with id fields
+        // GET /api/reservations - returns list of reservations with id fields and pagination
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ReservationOutputDto>>> GetReservations()
+        public async Task<ActionResult<PagedResult<ReservationOutputDto>>> GetReservations([FromQuery] PaginationParamsDto paramsDto)
         {
-            var reservations = await Task.FromResult(_reservationService.GetAllReservations().ToList());
-            return Ok(reservations.Select(r => new ReservationOutputDto
+            var skip = (paramsDto.PageNumber - 1) * paramsDto.PageSize;
+
+            var pagedResult = _reservationService.GetAllReservations(skip, paramsDto.PageSize);
+
+            return Ok(new PagedResult<ReservationOutputDto>
             {
-                Id = r.Id,
-                RestaurantId = r.RestaurantId,
-                RestaurantName = r.RestaurantName,
-                Date = r.Date
-            }));
+                Items = pagedResult.Items.Select(r => new ReservationOutputDto
+                {
+                    Id = r.Id,
+                    RestaurantId = r.RestaurantId,
+                    RestaurantName = r.RestaurantName,
+                    Date = r.Date
+                }),
+                TotalCount = pagedResult.TotalCount,
+                PageSize = pagedResult.PageSize,
+                CurrentPage = pagedResult.CurrentPage
+            });
         }
 
         // GET /api/reservations/{id} - returns single reservation with id field
@@ -57,17 +66,16 @@ namespace WebAPI.Controllers
                 Date = input.Date
             };
 
-            _reservationService.AddReservation(reservation);
-            await Task.CompletedTask;
+            var created = _reservationService.AddReservation(reservation);
 
             return CreatedAtAction("GetReservation", 
-                new { id = reservation.Id }, 
+                new { id = created.Id }, 
                 new ReservationOutputDto
                 {
-                    Id = reservation.Id,
-                    RestaurantId = reservation.RestaurantId,
-                    RestaurantName = reservation.RestaurantName,
-                    Date = reservation.Date
+                    Id = created.Id,
+                    RestaurantId = created.RestaurantId,
+                    RestaurantName = created.RestaurantName,
+                    Date = created.Date
                 });
         }
 
@@ -78,12 +86,19 @@ namespace WebAPI.Controllers
             var existing = _reservationService.GetReservationById(id);
             if (existing is null) return NotFound();
 
-            // RestaurantName is auto-populated server-side; only update Date from input
-            if (input.Date != default)
-                existing.Date = input.Date;
+            existing.Date = input.Date;
 
-            _reservationService.EditReservation(existing);
-            return Ok();
+            var updated = _reservationService.EditReservation(existing);
+
+            ReservationOutputDto reservationOutputDto = new ReservationOutputDto
+            {
+                Id = updated.Id,
+                RestaurantId = updated.RestaurantId,
+                RestaurantName = updated.RestaurantName,
+                Date = updated.Date
+            };
+
+            return Ok(reservationOutputDto);
         }
 
         // DELETE /api/reservations/{id} - deletes via string path param

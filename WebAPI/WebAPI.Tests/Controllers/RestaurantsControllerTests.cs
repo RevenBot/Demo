@@ -28,40 +28,42 @@ public class RestaurantsControllerTests
             new Restaurant { Id = "60d5ec49f1b2c8b4e8f1a1a1", Name = "Italian Bistro", Cuisine = "Italian", Borough = "Manhattan" },
             new Restaurant { Id = "60d5ec49f1b2c8b4e8f1a1a2", Name = "Sushi Place", Cuisine = "Japanese", Borough = "Queens" }
         };
-        _mockService.Setup(s => s.GetAllRestaurants()).Returns(restaurants.AsEnumerable);
+        _mockService.Setup(s => s.GetAllRestaurants(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Restaurant> { Items = restaurants, TotalCount = 2, PageSize = 10, CurrentPage = 1 });
 
         // Act
-        var result = await _controller.GetRestaurants();
+        var result = await _controller.GetRestaurants(new PaginationParamsDto());
 
         // Assert
         Assert.NotNull(result.Result);
         var okResult = result.Result as OkObjectResult;
         Assert.NotNull(okResult);
-        
-        var dtos = okResult!.Value as IEnumerable<RestaurantOutputDto>;
-        Assert.NotNull(dtos);
-        var dtoList = dtos.ToList();
-        Assert.Equal(2, dtoList.Count);
-        Assert.Equal("60d5ec49f1b2c8b4e8f1a1a1", dtoList[0].Id);
-        Assert.Equal("Italian Bistro", dtoList[0].Name);
+
+        var pagedResult = okResult!.Value as PagedResult<RestaurantOutputDto>;
+        Assert.NotNull(pagedResult);
+        Assert.Equal(2, pagedResult.TotalCount);
+        Assert.Equal(2, pagedResult.Items.Count());
+        Assert.Equal(10, pagedResult.PageSize);
+        Assert.Equal("60d5ec49f1b2c8b4e8f1a1a1", pagedResult.Items.First().Id);
+        Assert.Equal("Italian Bistro", pagedResult.Items.First().Name);
     }
 
     [Fact]
     public async Task GetRestaurants_ShouldReturnEmptyList_WhenNoRestaurants()
     {
         // Arrange
-        _mockService.Setup(s => s.GetAllRestaurants()).Returns(new List<Restaurant>().AsEnumerable);
+        _mockService.Setup(s => s.GetAllRestaurants(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Restaurant> { Items = new List<Restaurant>(), TotalCount = 0, PageSize = 10, CurrentPage = 1 });
 
         // Act
-        var result = await _controller.GetRestaurants();
+        var result = await _controller.GetRestaurants(new PaginationParamsDto());
 
         // Assert
         var okResult = result.Result as OkObjectResult;
         Assert.NotNull(okResult);
-        
-        var dtos = okResult!.Value as IEnumerable<RestaurantOutputDto>;
-        Assert.NotNull(dtos);
-        Assert.Empty(dtos!);
+
+        var pagedResult = okResult!.Value as PagedResult<RestaurantOutputDto>;
+        Assert.NotNull(pagedResult);
+        Assert.Equal(0, pagedResult.TotalCount);
+        Assert.Empty(pagedResult.Items.ToList());
     }
 
     [Fact]
@@ -115,10 +117,9 @@ public class RestaurantsControllerTests
             Cuisine = "American", 
             Borough = "Bronx" 
         };
-        
-        string? capturedId = null;
-        _mockService.Setup(s => s.AddRestaurant(It.IsAny<Restaurant>()))
-                    .Callback<Restaurant>(r => capturedId = r.Id);
+
+        var addedRestaurant = new Restaurant { Id = "60d5ec49f1b2c8b4e8f1a1a1", Name = "New Cafe", Cuisine = "American", Borough = "Bronx" };
+        _mockService.Setup(s => s.AddRestaurant(It.IsAny<Restaurant>())).Returns(addedRestaurant);
 
         // Act
         var result = await _controller.PostRestaurant(inputDto);
@@ -127,11 +128,13 @@ public class RestaurantsControllerTests
         Assert.NotNull(result.Result);
         var createdResult = result.Result as CreatedAtActionResult;
         Assert.NotNull(createdResult);
-        
+
         var dto = createdResult.Value as RestaurantOutputDto;
         Assert.NotNull(dto);
-
-        Assert.Equal(capturedId, dto.Id);
+        Assert.Equal("60d5ec49f1b2c8b4e8f1a1a1", dto.Id);
+        Assert.Equal("New Cafe", dto.Name);
+        Assert.Equal("American", dto.Cuisine);
+        Assert.Equal("Bronx", dto.Borough);
     }
 
     [Fact]
@@ -166,6 +169,7 @@ public class RestaurantsControllerTests
             Borough = "Queens" 
         };
         _mockService.Setup(s => s.GetRestaurantById("60d5ec49f1b2c8b4e8f1a1a4")).Returns(existing);
+        _mockService.Setup(s => s.EditRestaurant(It.IsAny<Restaurant>())).Returns((Restaurant r) => r);
 
         var input = new RestaurantInputDto 
         { 
@@ -178,8 +182,15 @@ public class RestaurantsControllerTests
         var result = await _controller.UpdateRestaurant("60d5ec49f1b2c8b4e8f1a1a4", input);
 
         // Assert
-        Assert.IsType<OkResult>(result);
+        var okResult = Assert.IsType<OkObjectResult>(result);
         
+        var dto = okResult.Value as RestaurantOutputDto;
+        Assert.NotNull(dto);
+        Assert.Equal("60d5ec49f1b2c8b4e8f1a1a4", dto.Id);
+        Assert.Equal("Updated", dto.Name);
+        Assert.Equal("Italian", dto.Cuisine);
+        Assert.Equal("Manhattan", dto.Borough);
+
         // Verify Edit was called
         _mockService.Verify(s => s.EditRestaurant(It.IsAny<Restaurant>()), Times.Once);
     }

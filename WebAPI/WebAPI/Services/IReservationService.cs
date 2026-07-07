@@ -4,12 +4,12 @@ namespace WebAPI.Services
 {
     public interface IReservationService
     {
-        IEnumerable<Reservation> GetAllReservations();
+        PagedResult<Reservation> GetAllReservations(int skip, int take);
         Reservation? GetReservationById(string id);
 
-        void AddReservation(Reservation newReservation);
+        Reservation AddReservation(Reservation newReservation);
 
-        void EditReservation(Reservation updatedReservation);
+        Reservation EditReservation(Reservation updatedReservation);
 
         void DeleteReservation(Reservation reservationToDelete);
     }

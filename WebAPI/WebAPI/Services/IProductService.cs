@@ -4,10 +4,10 @@ namespace WebAPI.Services
 {
     public interface IProductService
     {
-        IEnumerable<Product> GetAll();
+        PagedResult<Product> GetAll(int skip, int take);
         Product? GetById(int id);
-        void Add(Product product);
-        void Update(Product product);
+        Product Add(Product product);
+        Product Update(Product product);
         void Delete(int id);
     }
 }

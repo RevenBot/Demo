@@ -40,19 +40,21 @@ public class ReservationsControllerTests
                 Date = DateTime.Parse("2024-07-23T20:00:00")
             }
         };
-        _mockService.Setup(s => s.GetAllReservations()).Returns(reservations.AsEnumerable);
+        _mockService.Setup(s => s.GetAllReservations(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Reservation> { Items = reservations, TotalCount = 2, PageSize = 10, CurrentPage = 1 });
 
         // Act
-        var result = await _controller.GetReservations();
+        var result = await _controller.GetReservations(new PaginationParamsDto());
 
         // Assert
         Assert.NotNull(result.Result);
         var okResult = result.Result as OkObjectResult;
         Assert.NotNull(okResult);
 
-        var dtos = okResult!.Value as IEnumerable<ReservationOutputDto>;
-        Assert.NotNull(dtos);
-        var dtoList = dtos.ToList();
+        var pagedResult = okResult!.Value as PagedResult<ReservationOutputDto>;
+        Assert.NotNull(pagedResult);
+        Assert.Equal(2, pagedResult.TotalCount);
+        Assert.Equal(10, pagedResult.PageSize);
+        var dtoList = pagedResult.Items.ToList();
         Assert.Equal(2, dtoList.Count);
         Assert.Equal("60d5ec49f1b2c8b4e8f1a1a1", dtoList[0].Id);
         Assert.Equal("Italian Bistro", dtoList[0].RestaurantName);
@@ -62,18 +64,19 @@ public class ReservationsControllerTests
     public async Task GetReservations_ShouldReturnEmptyList_WhenNoReservations()
     {
         // Arrange
-        _mockService.Setup(s => s.GetAllReservations()).Returns(new List<Reservation>().AsEnumerable);
+        _mockService.Setup(s => s.GetAllReservations(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Reservation> { Items = new List<Reservation>(), TotalCount = 0, PageSize = 10, CurrentPage = 1 });
 
         // Act
-        var result = await _controller.GetReservations();
+        var result = await _controller.GetReservations(new PaginationParamsDto());
 
         // Assert
         var okResult = result.Result as OkObjectResult;
         Assert.NotNull(okResult);
 
-        var dtos = okResult!.Value as IEnumerable<ReservationOutputDto>;
-        Assert.NotNull(dtos);
-        Assert.Empty(dtos!);
+        var pagedResult = okResult!.Value as PagedResult<ReservationOutputDto>;
+        Assert.NotNull(pagedResult);
+        Assert.Equal(0, pagedResult.TotalCount);
+        Assert.Empty(pagedResult.Items.ToList());
     }
 
     [Fact]
@@ -126,9 +129,8 @@ public class ReservationsControllerTests
             Date = DateTime.Parse("2024-07-30T20:00:00")
         };
 
-        Reservation? capturedReservation = null;
-        _mockService.Setup(s => s.AddReservation(It.IsAny<Reservation>()))
-                    .Callback<Reservation>(r => capturedReservation = r);
+        var addedReservation = new Reservation { Id = "60d5ec49f1b2c8b4e8f1a1a1", RestaurantId = inputDto.RestaurantId, Date = inputDto.Date, RestaurantName = "Test Restaurant" };
+        _mockService.Setup(s => s.AddReservation(It.IsAny<Reservation>())).Returns(addedReservation);
 
         // Act
         var result = await _controller.PostReservation(inputDto);
@@ -140,6 +142,7 @@ public class ReservationsControllerTests
 
         var dto = createdResult.Value as ReservationOutputDto;
         Assert.NotNull(dto);
+        Assert.Equal("60d5ec49f1b2c8b4e8f1a1a1", dto.Id);
         Assert.Equal(inputDto.Date, dto.Date);
         Assert.Equal(inputDto.RestaurantId, dto.RestaurantId);
     }
@@ -173,6 +176,7 @@ public class ReservationsControllerTests
             Date = DateTime.Parse("2024-07-22T19:00:00")
         };
         _mockService.Setup(s => s.GetReservationById("60d5ec49f1b2c8b4e8f1a1a5")).Returns(existing);
+        _mockService.Setup(s => s.EditReservation(It.IsAny<Reservation>())).Returns(existing);
 
         var input = new ReservationInputDto
         {
@@ -183,7 +187,12 @@ public class ReservationsControllerTests
         var result = await _controller.PutReservation("60d5ec49f1b2c8b4e8f1a1a5", input);
 
         // Assert
-        Assert.IsType<OkResult>(result);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+
+        var dto = okResult.Value as ReservationOutputDto;
+        Assert.NotNull(dto);
+        Assert.Equal("60d5ec49f1b2c8b4e8f1a1a5", dto.Id);
+        Assert.Equal(input.Date, dto.Date);
 
         // Verify Edit was called
         _mockService.Verify(s => s.EditReservation(It.IsAny<Reservation>()), Times.Once);

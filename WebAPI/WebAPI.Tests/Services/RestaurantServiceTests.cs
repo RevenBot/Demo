@@ -48,9 +48,12 @@ public class RestaurantServiceTests : IDisposable
         };
 
         // Act
-        service.AddRestaurant(restaurant);
+        var added = service.AddRestaurant(restaurant);
         
         // Assert
+        Assert.NotNull(added);
+        Assert.Equal(restaurant.Name, added!.Name);
+        Assert.Equal(restaurant.Cuisine, added.Cuisine);
         var saved = await _context!.Restaurants.FindAsync(restaurant.Id);
         Assert.NotNull(saved);
         Assert.Equal("Test Restaurant", saved!.Name);
@@ -70,10 +73,14 @@ public class RestaurantServiceTests : IDisposable
         var service = new RestaurantService(_context!);
 
         // Act
-        var restaurants = service.GetAllRestaurants().ToList();
+        var result = service.GetAllRestaurants(0, 10);
 
         // Assert
-        Assert.Equal(2, restaurants.Count);
+        Assert.NotNull(result);
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal(2, result.Items.Count());
+        Assert.Equal(10, result.PageSize);
+        Assert.Equal(1, result.CurrentPage);
     }
 
     [Fact]
@@ -134,9 +141,12 @@ public class RestaurantServiceTests : IDisposable
         restaurant.Name = "New Name";
         restaurant.Cuisine = "French";
         restaurant.Borough = "Manhattan";
-        service.EditRestaurant(restaurant);
+        var edited = service.EditRestaurant(restaurant);
 
         // Assert
+        Assert.NotNull(edited);
+        Assert.Equal("New Name", edited!.Name);
+        Assert.Equal("French", edited.Cuisine);
         var updated = _context!.Restaurants.Find(restaurant.Id);
         Assert.NotNull(updated);
         Assert.Equal("New Name", updated!.Name);

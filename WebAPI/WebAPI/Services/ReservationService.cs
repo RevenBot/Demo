@@ -6,39 +6,51 @@ namespace WebAPI.Services
 {
     public class ReservationService : IReservationService
     {
-        private readonly RestaurantReservationDbContext _restaurantDbContext;
+        private readonly RestaurantReservationDbContext _dbContext;
 
-        public ReservationService(RestaurantReservationDbContext restaurantDbContext)
+        public ReservationService(RestaurantReservationDbContext dbContext)
         {
-            _restaurantDbContext = restaurantDbContext;
+            _dbContext = dbContext;
         }
 
-        public void AddReservation(Reservation newReservation)
+        public PagedResult<Reservation> GetAllReservations(int skip, int take)
         {
-            // Find the referenced restaurant and set its name in the reservation
-            var bookedRestaurant = _restaurantDbContext.Restaurants.FirstOrDefault(c => c.Id == newReservation.RestaurantId);
+            int totalCount = _dbContext.Reservations.Count();
+            var items = _dbContext.Reservations.Skip(skip).Take(take).ToList();
             
-            if (bookedRestaurant != null)
+            return new PagedResult<Reservation>
             {
-                newReservation.RestaurantName = bookedRestaurant.Name;
-            }
+                Items = items,
+                TotalCount = totalCount,
+                PageSize = take,
+                CurrentPage = (skip / take) + 1
+            };
+        }
 
-            _restaurantDbContext.Reservations.Add(newReservation);
-            _restaurantDbContext.ChangeTracker.DetectChanges();
-            Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-            _restaurantDbContext.SaveChanges();
+        public Reservation AddReservation(Reservation reservation)
+        {
+            _dbContext.Reservations.Add(reservation);
+            _dbContext.SaveChanges();
+
+            return reservation;
+        }
+
+        public Reservation EditReservation(Reservation updated)
+        {
+            _dbContext.Reservations.Update(updated);
+            _dbContext.SaveChanges();
+
+            return updated;
         }
 
         public void DeleteReservation(Reservation reservation)
         {
-            var reservationToDelete = _restaurantDbContext.Reservations.FirstOrDefault(b => b.Id == reservation.Id);
+            var reservationToDelete = _dbContext.Reservations.FirstOrDefault(b => b.Id == reservation.Id);
             
             if (reservationToDelete != null)
             {
-                _restaurantDbContext.Reservations.Remove(reservationToDelete);
-                _restaurantDbContext.ChangeTracker.DetectChanges();
-                Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-                _restaurantDbContext.SaveChanges();
+                _dbContext.Reservations.Remove(reservationToDelete);
+                _dbContext.SaveChanges();
             }
             else
             {
@@ -46,38 +58,9 @@ namespace WebAPI.Services
             }
         }
 
-        public void EditReservation(Reservation updated)
-        {
-            var existing = _restaurantDbContext.Reservations.FirstOrDefault(b => b.Id == updated.Id);
-            
-            if (existing != null)
-            {
-                // Only update fields that were actually provided in the body
-                if (!string.IsNullOrEmpty(updated.RestaurantName))
-                    existing.RestaurantName = updated.RestaurantName;
-                if (updated.Date != default)
-                    existing.Date = updated.Date;
-
-                _restaurantDbContext.Reservations.Update(existing);
-                _restaurantDbContext.ChangeTracker.DetectChanges();
-                Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-                _restaurantDbContext.SaveChanges();
-            }
-            else
-            {
-                throw new ArgumentException("The reservation to update cannot be found.");
-            }
-        }
-
-        public IEnumerable<Reservation> GetAllReservations()
-        {
-            return _restaurantDbContext.Reservations.OrderBy(b => b.Date).Take(20).AsNoTracking().ToList();
-        }
-
-        // Now accepts string ID directly - no ObjectId conversion needed
         public Reservation? GetReservationById(string id)
         {
-            return _restaurantDbContext.Reservations.AsNoTracking().FirstOrDefault(b => b.Id == id);
+            return _dbContext.Reservations.AsNoTracking().FirstOrDefault(b => b.Id == id);
         }
     }
 }

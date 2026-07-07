@@ -19,16 +19,25 @@ namespace WebAPI.Controllers
         
         // GET /api/restaurants - returns list of restaurants with id fields
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RestaurantOutputDto>>> GetRestaurants()
+        public async Task<ActionResult<PagedResult<RestaurantOutputDto>>> GetRestaurants([FromQuery] PaginationParamsDto paramsDto)
         {
-            var restaurants = await Task.FromResult(_restaurantService.GetAllRestaurants().ToList());
-            return Ok(restaurants.Select(r => new RestaurantOutputDto
+            int skip = (paramsDto.PageNumber - 1) * paramsDto.PageSize;
+            
+            var result = _restaurantService.GetAllRestaurants(skip, paramsDto.PageSize);
+
+            return Ok(new PagedResult<RestaurantOutputDto>
             {
-                Id = r.Id,
-                Name = r.Name,
-                Cuisine = r.Cuisine,
-                Borough = r.Borough
-            }));
+                Items = result.Items.Select(r => new RestaurantOutputDto
+                {
+                    Id = r.Id,
+                    Name = r.Name,
+                    Cuisine = r.Cuisine,
+                    Borough = r.Borough
+                }),
+                TotalCount = result.TotalCount,
+                PageSize = result.PageSize,
+                CurrentPage = result.CurrentPage
+            });
         }
 
         // GET /api/restaurants/{id} - returns single restaurant with id field
@@ -58,17 +67,16 @@ namespace WebAPI.Controllers
                 Borough = input.Borough
             };
 
-            _restaurantService.AddRestaurant(restaurant);
-            await Task.CompletedTask;
+            var created = _restaurantService.AddRestaurant(restaurant);
 
             return CreatedAtAction("GetRestaurant", 
-                new { id = restaurant.Id }, 
+                new { id = created.Id }, 
                 new RestaurantOutputDto
                 {
-                    Id = restaurant.Id,
-                    Name = restaurant.Name,
-                    Cuisine = restaurant.Cuisine,
-                    Borough = restaurant.Borough
+                    Id = created.Id,
+                    Name = created.Name,
+                    Cuisine = created.Cuisine,
+                    Borough = created.Borough
                 });
         }
 
@@ -86,8 +94,15 @@ namespace WebAPI.Controllers
             if (!string.IsNullOrEmpty(input.Borough))
                 existing.Borough = input.Borough;
 
-            _restaurantService.EditRestaurant(existing);
-            return Ok();
+            var updated = _restaurantService.EditRestaurant(existing);
+
+            return Ok(new RestaurantOutputDto
+            {
+                Id = updated.Id,
+                Name = updated.Name,
+                Cuisine = updated.Cuisine,
+                Borough = updated.Borough
+            });
         }
 
         // DELETE /api/restaurants/{id} - deletes via string path param

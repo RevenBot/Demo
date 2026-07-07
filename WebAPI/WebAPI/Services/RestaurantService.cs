@@ -13,13 +13,12 @@ namespace WebAPI.Services
             _restaurantDbContext = restaurantDbContext;
         }
 
-        public void AddRestaurant(Restaurant restaurant)
+        public Restaurant AddRestaurant(Restaurant restaurant)
         {
             // Id already set via default value in model, no need to generate here
             _restaurantDbContext.Restaurants.Add(restaurant);
-            _restaurantDbContext.ChangeTracker.DetectChanges();
-            Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
             _restaurantDbContext.SaveChanges();
+            return restaurant;
         }
 
         public void DeleteRestaurant(Restaurant restaurant)
@@ -39,34 +38,18 @@ namespace WebAPI.Services
             }
         }
 
-        public void EditRestaurant(Restaurant updated)
+        public Restaurant EditRestaurant(Restaurant updated)
         {
-            var existing = _restaurantDbContext.Restaurants.FirstOrDefault(c => c.Id == updated.Id);
-            
-            if (existing != null)
-            {
-                // Only update fields that were actually provided in the body
-                if (!string.IsNullOrEmpty(updated.Name))
-                    existing.Name = updated.Name;
-                if (!string.IsNullOrEmpty(updated.Cuisine))
-                    existing.Cuisine = updated.Cuisine;
-                if (!string.IsNullOrEmpty(updated.Borough))
-                    existing.Borough = updated.Borough;
-
-                _restaurantDbContext.Restaurants.Update(existing);
-                _restaurantDbContext.ChangeTracker.DetectChanges();
-                Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-                _restaurantDbContext.SaveChanges();
-            }
-            else
-            {
-                throw new ArgumentException("The restaurant to update cannot be found.");
-            }
+            _restaurantDbContext.Restaurants.Update(updated);
+            _restaurantDbContext.SaveChanges();
+            return updated;
         }
 
-        public IEnumerable<Restaurant> GetAllRestaurants()
+        public PagedResult<Restaurant> GetAllRestaurants(int skip, int take)
         {
-            return _restaurantDbContext.Restaurants.OrderByDescending(c => c.Id).Take(20).AsNoTracking().ToList();
+            int totalCount = _restaurantDbContext.Restaurants.Count();
+            var items = _restaurantDbContext.Restaurants.OrderByDescending(r => r.Id).Skip(skip).Take(take).ToList();
+            return new PagedResult<Restaurant> { Items = items, TotalCount = totalCount, PageSize = take, CurrentPage = (skip / take) + 1 };
         }
 
         // Now accepts string ID directly - no ObjectId conversion needed

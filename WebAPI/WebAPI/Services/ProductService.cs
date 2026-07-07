@@ -13,9 +13,17 @@ namespace WebAPI.Services
             _context = context;
         }
 
-        public IEnumerable<Product> GetAll()
+        public PagedResult<Product> GetAll(int skip, int take)
         {
-            return _context.Products.ToList();
+            int totalCount = _context.Products.Count();
+            List<Product> items = _context.Products.Skip(skip).Take(take).ToList();
+            return new PagedResult<Product>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageSize = take,
+                CurrentPage = (skip / take) + 1
+            };
         }
 
         public Product? GetById(int id)
@@ -23,16 +31,18 @@ namespace WebAPI.Services
             return _context.Products.Find(id);
         }
 
-        public void Add(Product product)
+        public Product Add(Product product)
         {
             _context.Products.Add(product);
             _context.SaveChanges();
+            return product;
         }
 
-        public void Update(Product product)
+        public Product Update(Product product)
         {
-            _context.Entry(product).State = EntityState.Modified;
+            _context.Products.Update(product);
             _context.SaveChanges();
+            return product;
         }
 
         public void Delete(int id)

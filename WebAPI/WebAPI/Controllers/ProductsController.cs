@@ -18,15 +18,24 @@ namespace WebAPI.Controllers
 
         // GET /api/products - returns list of products with id fields
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProductOutputDto>>> GetProducts()
+        public async Task<ActionResult<PagedResult<ProductOutputDto>>> GetProducts([FromQuery] PaginationParamsDto paramsDto)
         {
-            var products = await Task.FromResult(_productService.GetAll().ToList());
-            return Ok(products.Select(p => new ProductOutputDto
+            int skip = (paramsDto.PageNumber - 1) * paramsDto.PageSize;
+
+            var pagedResult = _productService.GetAll(skip, paramsDto.PageSize);
+
+            return Ok(new PagedResult<ProductOutputDto>
             {
-                Id = p.Id.ToString(),
-                Name = p.Name,
-                Price = p.Price
-            }));
+                Items = pagedResult.Items.Select(p => new ProductOutputDto
+                {
+                    Id = p.Id.ToString(),
+                    Name = p.Name,
+                    Price = p.Price
+                }).ToList(),
+                TotalCount = pagedResult.TotalCount,
+                PageSize = pagedResult.PageSize,
+                CurrentPage = pagedResult.CurrentPage
+            });
         }
 
         // GET /api/products/{id} - returns single product with id field
@@ -54,22 +63,21 @@ namespace WebAPI.Controllers
                 Price = input.Price
             };
 
-            _productService.Add(product);
-            await Task.CompletedTask;
+            var added = _productService.Add(product);
 
             return CreatedAtAction("GetProduct", 
-                new { id = product.Id }, 
+                new { id = added.Id }, 
                 new ProductOutputDto
                 {
-                    Id = product.Id.ToString(),
-                    Name = product.Name,
-                    Price = product.Price
+                    Id = added.Id.ToString(),
+                    Name = added.Name,
+                    Price = added.Price
                 });
         }
 
         // PUT /api/products/{id} - updates via string path param (no id in body)
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduct(string id, [FromBody] ProductInputDto input)
+        public async Task<ActionResult<ProductOutputDto>> PutProduct(string id, [FromBody] ProductInputDto input)
         {
             var existing = _productService.GetById(int.Parse(id));
             if (existing is null) return NotFound();
@@ -77,11 +85,16 @@ namespace WebAPI.Controllers
             // Only update fields that were actually provided in the body
             if (!string.IsNullOrEmpty(input.Name))
                 existing.Name = input.Name;
-            if (input.Price != default)
-                existing.Price = input.Price;
+            existing.Price = input.Price;
 
-            _productService.Update(existing);
-            return Ok();
+            var updated = _productService.Update(existing);
+
+            return Ok(new ProductOutputDto
+            {
+                Id = updated.Id.ToString(),
+                Name = updated.Name,
+                Price = updated.Price
+            });
         }
 
         // DELETE /api/products/{id} - deletes via string path param

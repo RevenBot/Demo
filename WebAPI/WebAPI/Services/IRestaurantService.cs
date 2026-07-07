@@ -4,12 +4,12 @@ namespace WebAPI.Services
 {
     public interface IRestaurantService
     {
-        IEnumerable<Restaurant> GetAllRestaurants();
+        PagedResult<Restaurant> GetAllRestaurants(int skip, int take);
         Restaurant? GetRestaurantById(string id);
 
-        void AddRestaurant(Restaurant newRestaurant);
+        Restaurant AddRestaurant(Restaurant newRestaurant);
 
-        void EditRestaurant(Restaurant updatedRestaurant);
+        Restaurant EditRestaurant(Restaurant updatedRestaurant);
 
         void DeleteRestaurant(Restaurant restaurantToDelete);
     }

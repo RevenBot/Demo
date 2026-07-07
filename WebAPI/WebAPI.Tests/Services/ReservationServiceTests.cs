@@ -70,11 +70,19 @@ public class ReservationServiceTests : IDisposable
         Assert.Equal(idRestaurant, resEntity.RestaurantId);
         Assert.Equal(24, resEntity.Id.Length);
         Assert.True(IsHexString(resEntity.Id));
+
+        // Also test service.AddReservation return value (returns the Reservation entity)
+        ReloadContext();
+        var service = CreateService(_context!);
+        var newRes = new Reservation { RestaurantId = idRestaurant };
+        var added = service.AddReservation(newRes);
+        Assert.NotNull(added);
+        Assert.NotEmpty(added.Id);
     }
 
 
     [Fact]
-    public async Task GetAllReservations_ShouldReturnOrderedByDate()
+    public async Task GetAllReservations_ShouldReturnPagedResult()
     {
         // Arrange - add restaurants first for the lookup
         var restaurant1 = new Restaurant { Name = "Restaurant 1", Cuisine = "Italian", Borough = "Manhattan" };
@@ -100,11 +108,14 @@ public class ReservationServiceTests : IDisposable
         // Act - reload context to see persisted data (InMemory needs this)
         ReloadContext();
         var service = CreateService(_context!);
-        var reservations = service.GetAllReservations().ToList();
+        var result = service.GetAllReservations(0, 10);
+        var reservations = result.Items.ToList();
 
-        // Assert - should be sorted ascending by date (oldest first), max 20
+        // Assert - PagedResult structure and count (service does NOT order by date)
         Assert.Equal(2, reservations.Count);
-        Assert.True(reservations[1].Date >= reservations[0].Date);
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal(10, result.PageSize);
+        Assert.Equal(1, result.CurrentPage);
     }
 
     [Fact]
@@ -172,12 +183,16 @@ public class ReservationServiceTests : IDisposable
 
         // Act
         updated.Date = newDate;
-        service.EditReservation(updated);
+        var edited = service.EditReservation(updated);
 
         // Assert - need to reload again since InMemory doesn't auto-refresh context
         ReloadContext();
         var persisted = _context!.Reservations.First(r => r.Id == reservation.Id);
         Assert.Equal(newDate, persisted.Date);
+
+        // Assert - EditReservation returns the edited entity
+        Assert.NotNull(edited);
+        Assert.Equal(newDate, edited.Date);
     }
     [Fact]
     public void EditReservation_NonExistent_ShouldThrow()

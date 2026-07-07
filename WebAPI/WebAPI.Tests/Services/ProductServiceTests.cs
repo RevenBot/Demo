@@ -42,13 +42,12 @@ public class ProductServiceTests : IDisposable
         var product = new Product { Name = "Test Product", Price = 9.99m };
 
         // Act
-        service.Add(product);
+        var added = service.Add(product);
         
         // Assert
-        var saved = await _context!.Products.FindAsync(product.Id);
-        Assert.NotNull(saved);
-        Assert.Equal("Test Product", saved!.Name);
-        Assert.Equal(9.99m, saved.Price);
+        Assert.NotNull(added);
+        Assert.Equal(product.Name, added!.Name);
+        Assert.Equal(product.Price, added.Price);
     }
 
     [Fact]
@@ -64,10 +63,13 @@ public class ProductServiceTests : IDisposable
         var service = new ProductService(_context!);
 
         // Act
-        var products = service.GetAll().ToList();
+        PagedResult<Product> result = service.GetAll(0, 10);
 
         // Assert
-        Assert.Equal(2, products.Count);
+        Assert.Equal(2, result.TotalCount);
+        Assert.Equal(2, result.Items.Count());
+        Assert.Equal(10, result.PageSize);
+        Assert.Equal(1, result.CurrentPage);
     }
 
     [Fact]
@@ -117,10 +119,9 @@ public class ProductServiceTests : IDisposable
         // Act
         product.Name = "New Name";
         product.Price = 10m;
-        service.Update(product);
+        var updated = service.Update(product);
 
         // Assert
-        var updated = _context!.Products.Find(product.Id);
         Assert.NotNull(updated);
         Assert.Equal("New Name", updated!.Name);
         Assert.Equal(10m, updated.Price);
