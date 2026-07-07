@@ -1,62 +1,66 @@
-// src/ProductForm.tsx
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
-import { Product } from './types/Product';
+import api from '../../lib/api';
+import { Button, PageShell, StatusBanner, TextField } from '../../components';
+import { Product, ProductInput } from './types/Product';
 
-const ProductForm: React.FC = () => {
-  const [product, setProduct] = useState<Product>({ name: '', price: 0 });
-  const [id, setId] = useState<number | null>(null);
+function ProductForm() {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [id, setId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [, setLocation] = useLocation();
   const [, params] = useRoute('/products/edit/:id');
 
   useEffect(() => {
     if (params && params.id) {
-      setId(Number(params.id));
-      axios.get<Product>(`/api/products/${params.id}`)
-        .then(response => setProduct(response.data))
-        .catch(err => setError(err.message));
+      setId(params.id);
+      api
+        .get<Product>(`/products/${params.id}`)
+        .then((response) => {
+          setName(response.data.name);
+          setPrice(String(response.data.price));
+        })
+        .catch((err: any) =>
+          setError(err.message ?? 'Failed to load product'),
+        );
     }
-  }, [params?.id]);
+  }, [params]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProduct({ ...product, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const body: ProductInput = { name, price: Number(price) };
+    setSubmitting(true);
     const request = id
-      ? axios.put(`/api/products/${id}`, product)
-      : axios.post('/api/products', product);
+      ? api.put(`/products/${id}`, body)
+      : api.post('/products', body);
 
-    request.then(() => {
-      setLocation('/products');
-    }).catch(err => {
-      setError(err.message);
-    });
+    request
+      .then(() => setLocation('/products'))
+      .catch((err: any) => setError(err.message ?? 'Failed to save product'))
+      .finally(() => setSubmitting(false));
   };
 
   return (
-    <div>
+    <PageShell>
       <h1>{id ? 'Edit Product' : 'Create Product'}</h1>
-      {error && <div>Error: {error}</div>}
+      {error && <StatusBanner variant="error">{error}</StatusBanner>}
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name</label>
-          <input type="text" name="name" value={product.name} onChange={handleChange} required />
-        </div>
-        <div>
-          <label>Price</label>
-          <input type="number" name="price" value={product.price} onChange={handleChange} required />
-        </div>
-        <button type="submit">Save</button>
+        <TextField label="Name" name="name" value={name} onChange={setName} />
+        <TextField
+          label="Price"
+          name="price"
+          type="number"
+          value={price}
+          onChange={setPrice}
+        />
+        <Button type="submit" loading={submitting}>
+          {id ? 'Update' : 'Create'}
+        </Button>
       </form>
-    </div>
+    </PageShell>
   );
-};
+}
 
 export default ProductForm;
-
-
-

@@ -1,50 +1,59 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useRoute } from 'wouter';
-import { Link } from 'wouter';
+import { useEffect, useState } from 'react';
+import { Link, useRoute, useLocation } from 'wouter';
+import api from '../../lib/api';
+import { Button, PageShell, StatusBanner } from '../../components';
 import { Restaurant } from './types/Restaurant';
 
-const RestaurantDetail: React.FC = () => {
+function RestaurantDetail() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [, setLocation] = useLocation();
   const [, params] = useRoute('/restaurants/:id');
 
   useEffect(() => {
-    console.log(params)
     if (params && params.id) {
-      axios.get<Restaurant>(`/api/restaurants/${params.id}`)
-        .then(response => {
-          setRestaurant(response.data);
-          console.log(response)
-        })
-        .catch(err => setError(err.message));
+      api
+        .get<Restaurant>(`/restaurants/${params.id}`)
+        .then((response) => setRestaurant(response.data))
+        .catch((err: any) =>
+          setError(err.message ?? 'Failed to load restaurant'),
+        );
     }
-  }, [params?.id]);
+  }, [params]);
 
   const handleDelete = () => {
-    if (restaurant) {
-      axios.delete(`/api/restaurants/${restaurant._id}`)
-        .then(() => {
-          window.location.href = '/restaurants';
-        })
-        .catch(err => setError(err.message));
-    }
+    if (!restaurant) return;
+    setDeleting(true);
+    api
+      .delete(`/restaurants/${restaurant.id}`)
+      .then(() => setLocation('/restaurants'))
+      .catch((err: any) => {
+        setError(err.message ?? 'Failed to delete restaurant');
+        setDeleting(false);
+      });
   };
 
-  if (!restaurant) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-
   return (
-    <div>
+    <PageShell>
       <h1>Restaurant Details</h1>
-      <p>Name: {restaurant.name}</p>
-      <p>Cuisine: {restaurant.cuisine}</p>
-      <p>Borough: {restaurant.borough}</p>
-      <Link href={`/restaurants/edit/${restaurant._id}`}>Edit</Link>
-      <button onClick={handleDelete}>Delete</button>
-    </div>
+      {error ? (
+        <StatusBanner variant="error">{error}</StatusBanner>
+      ) : !restaurant ? (
+        <StatusBanner variant="loading">Loading restaurant…</StatusBanner>
+      ) : (
+        <>
+          <p>Name: {restaurant.name}</p>
+          <p>Cuisine: {restaurant.cuisine}</p>
+          <p>Borough: {restaurant.borough}</p>
+          <Link href={`/restaurants/edit/${restaurant.id}`}>Edit</Link>
+          <Button variant="danger" loading={deleting} onClick={handleDelete}>
+            Delete
+          </Button>
+        </>
+      )}
+    </PageShell>
   );
-};
+}
 
 export default RestaurantDetail;
-

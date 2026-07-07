@@ -1,0 +1,48 @@
+/*
+ * WebReact Design Tokens
+ * Single source of truth for all visual decisions.
+ * Sourced from DESIGN.md Section 2 (Color), 3 (Typography), 4 (Spacing).
+ * No raw hex outside this file. Every primitive consumes these via var(--token).
+ */
+
+:root {
+  /* ── Color (DESIGN.md §2) ───────────────────────────────────────── */
+  --color-bg: #f7f8f8;          /* page canvas */
+  --color-fg: #0a0a0a;          /* headlines, body, input values */
+  --color-accent: #5e6ad2;      /* primary CTAs, active nav, focus rings */
+  --color-accent-fg: #ffffff;   /* text on accent surfaces */
+  --color-border: #d0d6e0;      /* dividers, input outlines, card edges */
+  --color-danger: #dc2626;      /* destructive actions, error text/rings */
+  --color-muted: #6b7280;       /* helper text, placeholders, metadata */
+
+  /* Accent interaction variants (hover/active shifts, DESIGN.md §5 Button) */
+  --color-accent-hover: #7170ff;
+  --color-danger-hover: #b91c1c;
+
+  /* Surface tints (declared tokens so component CSS stays raw-value-free) */
+  --color-hover-tint: rgba(10, 10, 10, 0.04);   /* subtle hover surface */
+  --color-danger-tint: rgba(220, 38, 38, 0.08); /* error banner background */
+
+  /* ── Spacing (DESIGN.md §4) — 4px base ──────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* ── Radii (DESIGN.md §4) ───────────────────────────────────────── */
+  --radius-sm: 6px;   /* buttons, inputs */
+  --radius-md: 8px;   /* cards, banners */
+
+  /* ── Typography (DESIGN.md §3) ──────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', Menlo, monospace;
+
+  /* ── Shadow (DESIGN.md §4) ──────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* ── Motion (DESIGN.md §6) ──────────────────────────────────────── */
+  --duration-micro: 120ms;
+  --ease-out: ease-out;
+}

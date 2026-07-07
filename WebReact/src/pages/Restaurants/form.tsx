@@ -1,69 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
-import { Restaurant } from './types/Restaurant';
+import api from '../../lib/api';
+import { Button, PageShell, StatusBanner, TextField } from '../../components';
+import { Restaurant, RestaurantInput } from './types/Restaurant';
 
-const RestaurantForm: React.FC = () => {
-  const [restaurant, setRestaurant] = useState<Restaurant>({ name: '', cuisine: '', borough: '' });
+function RestaurantForm() {
+  const [name, setName] = useState('');
+  const [cuisine, setCuisine] = useState('');
+  const [borough, setBorough] = useState('');
   const [id, setId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [, setLocation] = useLocation();
   const [, params] = useRoute('/restaurants/edit/:id');
 
   useEffect(() => {
     if (params && params.id) {
       setId(params.id);
-      console.log("--")
-      console.log(params.id)
-      console.log("--")
-      axios.get<Restaurant>(`/api/restaurants/${params.id}`)
-        .then(response => setRestaurant(response.data))
-        .catch(err => setError(err.message));
+      api
+        .get<Restaurant>(`/restaurants/${params.id}`)
+        .then((response) => {
+          setName(response.data.name);
+          setCuisine(response.data.cuisine);
+          setBorough(response.data.borough);
+        })
+        .catch((err: any) =>
+          setError(err.message ?? 'Failed to load restaurant'),
+        );
     }
-  }, [params?.id]);
+  }, [params]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setRestaurant({ ...restaurant, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const body: RestaurantInput = { name, cuisine, borough };
+    setSubmitting(true);
     const request = id
-      ? axios.put(`/api/restaurants/${id}`, restaurant)
-      : axios.post('/api/restaurants', restaurant);
+      ? api.put(`/restaurants/${id}`, body)
+      : api.post('/restaurants', body);
 
-    request.then(() => {
-      setLocation('/restaurants');
-    }).catch(err => {
-      setError(err.message);
-    });
+    request
+      .then(() => setLocation('/restaurants'))
+      .catch((err: any) =>
+        setError(err.message ?? 'Failed to save restaurant'),
+      )
+      .finally(() => setSubmitting(false));
   };
 
   return (
-    <div>
+    <PageShell>
       <h1>{id ? 'Edit Restaurant' : 'Create Restaurant'}</h1>
-      {error && <div>Error: {error}</div>}
+      {error && <StatusBanner variant="error">{error}</StatusBanner>}
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name</label>
-          <input type="text" name="name" value={restaurant.name} onChange={handleChange} required />
-        </div>
-        <div>
-          <label>Cuisine</label>
-          <input type="text" name="cuisine" value={restaurant.cuisine} onChange={handleChange} required />
-        </div>
-        <div>
-          <label>Borough</label>
-          <input type="text" name="borough" value={restaurant.borough} onChange={handleChange} required />
-        </div>
-        <button type="submit">Save</button>
+        <TextField label="Name" name="name" value={name} onChange={setName} />
+        <TextField
+          label="Cuisine"
+          name="cuisine"
+          value={cuisine}
+          onChange={setCuisine}
+        />
+        <TextField
+          label="Borough"
+          name="borough"
+          value={borough}
+          onChange={setBorough}
+        />
+        <Button type="submit" loading={submitting}>
+          {id ? 'Update' : 'Create'}
+        </Button>
       </form>
-    </div>
+    </PageShell>
   );
-};
+}
 
 export default RestaurantForm;
-
-
-
-

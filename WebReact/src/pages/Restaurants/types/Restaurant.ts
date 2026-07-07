@@ -1,5 +1,11 @@
 export interface Restaurant {
-  _id?: string;
+  id: string;
+  name: string;
+  cuisine: string;
+  borough: string;
+}
+
+export interface RestaurantInput {
   name: string;
   cuisine: string;
   borough: string;
