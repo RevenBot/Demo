@@ -4,13 +4,13 @@ namespace WebAPI.Services
 {
     public interface IRestaurantService
     {
-        PagedResult<Restaurant> GetAllRestaurants(int skip, int take);
-        Restaurant? GetRestaurantById(string id);
+        Task<PagedResult<Restaurant>> GetAllRestaurantsAsync(int skip, int take);
+        Task<Restaurant?> GetRestaurantByIdAsync(string id);
 
-        Restaurant AddRestaurant(Restaurant newRestaurant);
+        Task<Restaurant> AddRestaurantAsync(Restaurant newRestaurant);
 
-        Restaurant EditRestaurant(Restaurant updatedRestaurant);
+        Task<Restaurant> EditRestaurantAsync(Restaurant updatedRestaurant);
 
-        void DeleteRestaurant(Restaurant restaurantToDelete);
+        Task DeleteRestaurantAsync(Restaurant restaurantToDelete);
     }
 }

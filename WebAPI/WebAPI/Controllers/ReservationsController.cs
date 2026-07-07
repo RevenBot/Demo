@@ -23,7 +23,7 @@ namespace WebAPI.Controllers
         {
             var skip = (paramsDto.PageNumber - 1) * paramsDto.PageSize;
 
-            var pagedResult = _reservationService.GetAllReservations(skip, paramsDto.PageSize);
+            var pagedResult = await _reservationService.GetAllReservationsAsync(skip, paramsDto.PageSize);
 
             return Ok(new PagedResult<ReservationOutputDto>
             {
@@ -44,7 +44,7 @@ namespace WebAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ReservationOutputDto>> GetReservation(string id)
         {
-            var reservation = _reservationService.GetReservationById(id);
+            var reservation = await _reservationService.GetReservationByIdAsync(id);
             if (reservation is null) return NotFound();
 
             return Ok(new ReservationOutputDto
@@ -66,7 +66,7 @@ namespace WebAPI.Controllers
                 Date = input.Date
             };
 
-            var created = _reservationService.AddReservation(reservation);
+            var created = await _reservationService.AddReservationAsync(reservation);
 
             return CreatedAtAction("GetReservation", 
                 new { id = created.Id }, 
@@ -83,12 +83,12 @@ namespace WebAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutReservation(string id, [FromBody] ReservationInputDto input)
         {
-            var existing = _reservationService.GetReservationById(id);
+            var existing = await _reservationService.GetReservationByIdAsync(id);
             if (existing is null) return NotFound();
 
             existing.Date = input.Date;
 
-            var updated = _reservationService.EditReservation(existing);
+            var updated = await _reservationService.EditReservationAsync(existing);
 
             ReservationOutputDto reservationOutputDto = new ReservationOutputDto
             {
@@ -105,10 +105,10 @@ namespace WebAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteReservation(string id)
         {
-            var reservation = _reservationService.GetReservationById(id);
+            var reservation = await _reservationService.GetReservationByIdAsync(id);
             if (reservation is null) return NotFound();
 
-            _reservationService.DeleteReservation(reservation);
+            await _reservationService.DeleteReservationAsync(reservation);
             return Ok();
         }
     }

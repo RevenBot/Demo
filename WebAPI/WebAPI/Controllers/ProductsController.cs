@@ -22,7 +22,7 @@ namespace WebAPI.Controllers
         {
             int skip = (paramsDto.PageNumber - 1) * paramsDto.PageSize;
 
-            var pagedResult = _productService.GetAll(skip, paramsDto.PageSize);
+            var pagedResult = await _productService.GetAllAsync(skip, paramsDto.PageSize);
 
             return Ok(new PagedResult<ProductOutputDto>
             {
@@ -42,7 +42,7 @@ namespace WebAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<ProductOutputDto>> GetProduct(string id)
         {
-            var product = _productService.GetById(int.Parse(id));
+            var product = await _productService.GetByIdAsync(int.Parse(id));
             if (product is null) return NotFound();
 
             return Ok(new ProductOutputDto
@@ -63,7 +63,7 @@ namespace WebAPI.Controllers
                 Price = input.Price
             };
 
-            var added = _productService.Add(product);
+            var added = await _productService.AddAsync(product);
 
             return CreatedAtAction("GetProduct", 
                 new { id = added.Id }, 
@@ -79,7 +79,7 @@ namespace WebAPI.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<ProductOutputDto>> PutProduct(string id, [FromBody] ProductInputDto input)
         {
-            var existing = _productService.GetById(int.Parse(id));
+            var existing = await _productService.GetByIdAsync(int.Parse(id));
             if (existing is null) return NotFound();
 
             // Only update fields that were actually provided in the body
@@ -87,7 +87,7 @@ namespace WebAPI.Controllers
                 existing.Name = input.Name;
             existing.Price = input.Price;
 
-            var updated = _productService.Update(existing);
+            var updated = await _productService.UpdateAsync(existing);
 
             return Ok(new ProductOutputDto
             {
@@ -101,10 +101,10 @@ namespace WebAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(string id)
         {
-            var product = _productService.GetById(int.Parse(id));
+            var product = await _productService.GetByIdAsync(int.Parse(id));
             if (product is null) return NotFound();
 
-            _productService.Delete(int.Parse(id));
+            await _productService.DeleteAsync(int.Parse(id));
             return Ok();
         }
     }

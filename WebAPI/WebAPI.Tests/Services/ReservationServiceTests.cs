@@ -75,7 +75,7 @@ public class ReservationServiceTests : IDisposable
         ReloadContext();
         var service = CreateService(_context!);
         var newRes = new Reservation { RestaurantId = idRestaurant };
-        var added = service.AddReservation(newRes);
+        var added = await service.AddReservationAsync(newRes);
         Assert.NotNull(added);
         Assert.NotEmpty(added.Id);
     }
@@ -108,7 +108,7 @@ public class ReservationServiceTests : IDisposable
         // Act - reload context to see persisted data (InMemory needs this)
         ReloadContext();
         var service = CreateService(_context!);
-        var result = service.GetAllReservations(0, 10);
+        var result = await service.GetAllReservationsAsync(0, 10);
         var reservations = result.Items.ToList();
 
         // Assert - PagedResult structure and count (service does NOT order by date)
@@ -138,7 +138,7 @@ public class ReservationServiceTests : IDisposable
         var service = CreateService(_context!);
 
         // Act
-        var result = service.GetReservationById(reservation.Id);
+        var result = await service.GetReservationByIdAsync(reservation.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -146,14 +146,14 @@ public class ReservationServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetReservationById_ShouldReturnNull_WhenDoesNotExist()
+    public async Task GetReservationById_ShouldReturnNull_WhenDoesNotExist()
     {
         // Arrange - no reservations exist
         ReloadContext();
         var service = CreateService(_context!);
 
         // Act
-        var result = service.GetReservationById("000000000000000000000000");
+        var result = await service.GetReservationByIdAsync("000000000000000000000000");
 
         // Assert
         Assert.Null(result);
@@ -183,7 +183,7 @@ public class ReservationServiceTests : IDisposable
 
         // Act
         updated.Date = newDate;
-        var edited = service.EditReservation(updated);
+        var edited = await service.EditReservationAsync(updated);
 
         // Assert - need to reload again since InMemory doesn't auto-refresh context
         ReloadContext();
@@ -195,7 +195,7 @@ public class ReservationServiceTests : IDisposable
         Assert.Equal(newDate, edited.Date);
     }
     [Fact]
-    public void EditReservation_NonExistent_ShouldThrow()
+    public async Task EditReservation_NonExistent_ShouldThrow()
     {
         // Arrange - no reservations exist
         ReloadContext();
@@ -208,7 +208,7 @@ public class ReservationServiceTests : IDisposable
         };
 
         // Act & Assert
-        var ex = Record.Exception(() => service.EditReservation(fakeRes));
+        var ex = await Record.ExceptionAsync(async () => await service.EditReservationAsync(fakeRes));
         Assert.NotNull(ex);
     }
 
@@ -233,7 +233,7 @@ public class ReservationServiceTests : IDisposable
 
         // Act - need to re-fetch after reload for the delete call
         var existing = _context!.Reservations.First(r => r.Id == reservation.Id);
-        service.DeleteReservation(existing);
+        await service.DeleteReservationAsync(existing);
 
         // Assert
         var deleted = _context.Reservations.Find(reservation.Id);
@@ -241,7 +241,7 @@ public class ReservationServiceTests : IDisposable
     }
 
     [Fact]
-    public void DeleteReservation_NonExistent_ShouldThrow()
+    public async Task DeleteReservation_NonExistent_ShouldThrow()
     {
         // Arrange - no reservations exist, so none can be found
         ReloadContext();
@@ -254,7 +254,7 @@ public class ReservationServiceTests : IDisposable
         };
 
         // Act & Assert
-        var ex = Record.Exception(() => service.DeleteReservation(fakeRes));
+        var ex = await Record.ExceptionAsync(async () => await service.DeleteReservationAsync(fakeRes));
         Assert.NotNull(ex);
     }
 

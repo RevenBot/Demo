@@ -42,7 +42,7 @@ public class ProductServiceTests : IDisposable
         var product = new Product { Name = "Test Product", Price = 9.99m };
 
         // Act
-        var added = service.Add(product);
+        var added = await service.AddAsync(product);
         
         // Assert
         Assert.NotNull(added);
@@ -63,7 +63,7 @@ public class ProductServiceTests : IDisposable
         var service = new ProductService(_context!);
 
         // Act
-        PagedResult<Product> result = service.GetAll(0, 10);
+        PagedResult<Product> result = await service.GetAllAsync(0, 10);
 
         // Assert
         Assert.Equal(2, result.TotalCount);
@@ -73,7 +73,7 @@ public class ProductServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetById_ShouldReturnProduct_WhenExists()
+    public async Task GetById_ShouldReturnProduct_WhenExists()
     {
         // Arrange
         var expected = new Product { Name = "Found Product", Price = 15m };
@@ -84,7 +84,7 @@ public class ProductServiceTests : IDisposable
         var service = new ProductService(_context!);
 
         // Act
-        var result = service.GetById(expected.Id);
+        var result = await service.GetByIdAsync(expected.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -92,21 +92,21 @@ public class ProductServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetById_ShouldReturnNull_WhenDoesNotExist()
+    public async Task GetById_ShouldReturnNull_WhenDoesNotExist()
     {
         // Arrange
         ReloadContext();
         var service = new ProductService(_context!);
 
         // Act
-        var result = service.GetById(999);
+        var result = await service.GetByIdAsync(999);
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public void Update_Product_ShouldModifyExistingProduct()
+    public async Task Update_Product_ShouldModifyExistingProduct()
     {
         // Arrange
         var product = new Product { Name = "Old Name", Price = 5m };
@@ -119,7 +119,7 @@ public class ProductServiceTests : IDisposable
         // Act
         product.Name = "New Name";
         product.Price = 10m;
-        var updated = service.Update(product);
+        var updated = await service.UpdateAsync(product);
 
         // Assert
         Assert.NotNull(updated);
@@ -128,7 +128,7 @@ public class ProductServiceTests : IDisposable
     }
 
     [Fact]
-    public void Delete_Product_ShouldRemoveFromDatabase()
+    public async Task Delete_Product_ShouldRemoveFromDatabase()
     {
         // Arrange
         var product = new Product { Name = "To Delete", Price = 7.5m };
@@ -139,7 +139,7 @@ public class ProductServiceTests : IDisposable
         var service = new ProductService(_context!);
 
         // Act
-        service.Delete(product.Id);
+        await service.DeleteAsync(product.Id);
 
         // Assert
         var deleted = _context!.Products.Find(product.Id);
@@ -147,14 +147,14 @@ public class ProductServiceTests : IDisposable
     }
 
     [Fact]
-    public void Delete_NonExistentProduct_ShouldNotThrow()
+    public async Task Delete_NonExistentProduct_ShouldNotThrow()
     {
         // Arrange
         ReloadContext();
         var service = new ProductService(_context!);
 
         // Act & Assert - should not throw
-        var ex = Record.Exception(() => service.Delete(999));
+        var ex = await Record.ExceptionAsync(async () => await service.DeleteAsync(999));
         Assert.Null(ex);
     }
 }

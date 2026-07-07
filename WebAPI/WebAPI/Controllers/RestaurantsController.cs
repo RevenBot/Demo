@@ -23,7 +23,7 @@ namespace WebAPI.Controllers
         {
             int skip = (paramsDto.PageNumber - 1) * paramsDto.PageSize;
             
-            var result = _restaurantService.GetAllRestaurants(skip, paramsDto.PageSize);
+            var result = await _restaurantService.GetAllRestaurantsAsync(skip, paramsDto.PageSize);
 
             return Ok(new PagedResult<RestaurantOutputDto>
             {
@@ -44,7 +44,7 @@ namespace WebAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<RestaurantOutputDto>> GetRestaurant(string id)
         {
-            var restaurant = _restaurantService.GetRestaurantById(id);
+            var restaurant = await _restaurantService.GetRestaurantByIdAsync(id);
             if (restaurant is null) return NotFound();
 
             return Ok(new RestaurantOutputDto
@@ -67,7 +67,7 @@ namespace WebAPI.Controllers
                 Borough = input.Borough
             };
 
-            var created = _restaurantService.AddRestaurant(restaurant);
+            var created = await _restaurantService.AddRestaurantAsync(restaurant);
 
             return CreatedAtAction("GetRestaurant", 
                 new { id = created.Id }, 
@@ -84,7 +84,7 @@ namespace WebAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateRestaurant(string id, [FromBody] RestaurantInputDto input)
         {
-            var existing = _restaurantService.GetRestaurantById(id);
+            var existing = await _restaurantService.GetRestaurantByIdAsync(id);
             if (existing is null) return NotFound();
 
             if (!string.IsNullOrEmpty(input.Name))
@@ -94,7 +94,7 @@ namespace WebAPI.Controllers
             if (!string.IsNullOrEmpty(input.Borough))
                 existing.Borough = input.Borough;
 
-            var updated = _restaurantService.EditRestaurant(existing);
+            var updated = await _restaurantService.EditRestaurantAsync(existing);
 
             return Ok(new RestaurantOutputDto
             {
@@ -109,10 +109,10 @@ namespace WebAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRestaurant(string id)
         {
-            var restaurant = _restaurantService.GetRestaurantById(id);
+            var restaurant = await _restaurantService.GetRestaurantByIdAsync(id);
             if (restaurant is null) return NotFound();
 
-            _restaurantService.DeleteRestaurant(restaurant);
+            await _restaurantService.DeleteRestaurantAsync(restaurant);
             return Ok();
         }
     }

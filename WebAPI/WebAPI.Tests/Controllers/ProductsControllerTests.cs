@@ -28,13 +28,13 @@ public class ProductsControllerTests
             new Product { Id = 1, Name = "Laptop", Price = 999m },
             new Product { Id = 2, Name = "Mouse", Price = 25m }
         };
-        _mockService.Setup(s => s.GetAll(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Product>
+        _mockService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>())).Returns(Task.FromResult(new PagedResult<Product>
         {
             Items = products,
             TotalCount = 2,
             PageSize = 10,
             CurrentPage = 1
-        });
+        }));
 
         // Act
         var result = await _controller.GetProducts(new PaginationParamsDto());
@@ -56,13 +56,13 @@ public class ProductsControllerTests
     public async Task GetProducts_ShouldReturnEmptyList_WhenNoProducts()
     {
         // Arrange
-        _mockService.Setup(s => s.GetAll(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Product>
+        _mockService.Setup(s => s.GetAllAsync(It.IsAny<int>(), It.IsAny<int>())).Returns(Task.FromResult(new PagedResult<Product>
         {
             Items = new List<Product>(),
             TotalCount = 0,
             PageSize = 10,
             CurrentPage = 1
-        });
+        }));
 
         // Act
         var result = await _controller.GetProducts(new PaginationParamsDto());
@@ -82,7 +82,7 @@ public class ProductsControllerTests
     {
         // Arrange
         var product = new Product { Id = 42, Name = "Tablet", Price = 500m };
-        _mockService.Setup(s => s.GetById(42)).Returns(product);
+        _mockService.Setup(s => s.GetByIdAsync(42)).Returns(Task.FromResult<Product?>(product));
 
         // Act
         var result = await _controller.GetProduct("42");
@@ -102,7 +102,7 @@ public class ProductsControllerTests
     public async Task GetProduct_WhenNotFound_ShouldReturnNotFound()
     {
         // Arrange
-        _mockService.Setup(s => s.GetById(99)).Returns((Product?)null);
+        _mockService.Setup(s => s.GetByIdAsync(99)).Returns(Task.FromResult((Product?)null));
 
         // Act
         var result = await _controller.GetProduct("99");
@@ -117,7 +117,7 @@ public class ProductsControllerTests
         // Arrange
         var inputDto = new ProductInputDto { Name = "New Chair", Price = 150m };
         var addedProduct = new Product { Id = 1, Name = "New Chair", Price = 150m };
-        _mockService.Setup(s => s.Add(It.IsAny<Product>())).Returns(addedProduct);
+        _mockService.Setup(s => s.AddAsync(It.IsAny<Product>())).Returns(Task.FromResult(addedProduct));
 
         // Act
         var result = await _controller.PostProduct(inputDto);
@@ -139,7 +139,7 @@ public class ProductsControllerTests
     public async Task PutProduct_WhenNotFound_ShouldReturnNotFound()
     {
         // Arrange
-        _mockService.Setup(s => s.GetById(5)).Returns((Product?)null);
+        _mockService.Setup(s => s.GetByIdAsync(5)).Returns(Task.FromResult((Product?)null));
 
         var input = new ProductInputDto 
         { 
@@ -164,8 +164,8 @@ public class ProductsControllerTests
             Name = "Old", 
             Price = 10m 
         };
-        _mockService.Setup(s => s.GetById(1)).Returns(existing);
-        _mockService.Setup(s => s.Update(It.IsAny<Product>())).Returns(existing);
+        _mockService.Setup(s => s.GetByIdAsync(1)).Returns(Task.FromResult<Product?>(existing));
+        _mockService.Setup(s => s.UpdateAsync(It.IsAny<Product>())).Returns(Task.FromResult(existing));
 
         var input = new ProductInputDto 
         { 
@@ -185,14 +185,14 @@ public class ProductsControllerTests
         Assert.Equal("Updated", dto.Name);
         
         // Verify Update was called
-        _mockService.Verify(s => s.Update(It.IsAny<Product>()), Times.Once);
+        _mockService.Verify(s => s.UpdateAsync(It.IsAny<Product>()), Times.Once);
     }
 
     [Fact]
     public async Task DeleteProduct_WhenNotFound_ShouldReturnNotFound()
     {
         // Arrange
-        _mockService.Setup(s => s.GetById(7)).Returns((Product?)null);
+        _mockService.Setup(s => s.GetByIdAsync(7)).Returns(Task.FromResult((Product?)null));
 
         // Act
         var result = await _controller.DeleteProduct("7");
@@ -211,7 +211,7 @@ public class ProductsControllerTests
             Name = "Will Delete", 
             Price = 5m 
         };
-        _mockService.Setup(s => s.GetById(3)).Returns(product);
+        _mockService.Setup(s => s.GetByIdAsync(3)).Returns(Task.FromResult<Product?>(product));
 
         // Act
         var result = await _controller.DeleteProduct("3");
@@ -220,7 +220,7 @@ public class ProductsControllerTests
         Assert.IsType<OkResult>(result);
         
         // Verify Delete was called with correct ID
-        _mockService.Verify(s => s.Delete(It.IsAny<int>()), Times.Once);
+        _mockService.Verify(s => s.DeleteAsync(It.IsAny<int>()), Times.Once);
     }
 
 }

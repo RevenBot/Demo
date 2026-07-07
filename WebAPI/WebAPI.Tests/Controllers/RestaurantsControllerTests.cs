@@ -28,7 +28,7 @@ public class RestaurantsControllerTests
             new Restaurant { Id = "60d5ec49f1b2c8b4e8f1a1a1", Name = "Italian Bistro", Cuisine = "Italian", Borough = "Manhattan" },
             new Restaurant { Id = "60d5ec49f1b2c8b4e8f1a1a2", Name = "Sushi Place", Cuisine = "Japanese", Borough = "Queens" }
         };
-        _mockService.Setup(s => s.GetAllRestaurants(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Restaurant> { Items = restaurants, TotalCount = 2, PageSize = 10, CurrentPage = 1 });
+        _mockService.Setup(s => s.GetAllRestaurantsAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new PagedResult<Restaurant> { Items = restaurants, TotalCount = 2, PageSize = 10, CurrentPage = 1 });
 
         // Act
         var result = await _controller.GetRestaurants(new PaginationParamsDto());
@@ -51,7 +51,7 @@ public class RestaurantsControllerTests
     public async Task GetRestaurants_ShouldReturnEmptyList_WhenNoRestaurants()
     {
         // Arrange
-        _mockService.Setup(s => s.GetAllRestaurants(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Restaurant> { Items = new List<Restaurant>(), TotalCount = 0, PageSize = 10, CurrentPage = 1 });
+        _mockService.Setup(s => s.GetAllRestaurantsAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new PagedResult<Restaurant> { Items = new List<Restaurant>(), TotalCount = 0, PageSize = 10, CurrentPage = 1 });
 
         // Act
         var result = await _controller.GetRestaurants(new PaginationParamsDto());
@@ -77,7 +77,7 @@ public class RestaurantsControllerTests
             Cuisine = "Thai", 
             Borough = "Brooklyn" 
         };
-        _mockService.Setup(s => s.GetRestaurantById("60d5ec49f1b2c8b4e8f1a1a3")).Returns(restaurant);
+        _mockService.Setup(s => s.GetRestaurantByIdAsync("60d5ec49f1b2c8b4e8f1a1a3")).ReturnsAsync(restaurant);
 
         // Act
         var result = await _controller.GetRestaurant("60d5ec49f1b2c8b4e8f1a1a3");
@@ -98,7 +98,7 @@ public class RestaurantsControllerTests
     public async Task GetRestaurant_WhenNotFound_ShouldReturnNotFound()
     {
         // Arrange
-        _mockService.Setup(s => s.GetRestaurantById("nonexistent")).Returns((Restaurant?)null);
+        _mockService.Setup(s => s.GetRestaurantByIdAsync("nonexistent")).ReturnsAsync((Restaurant?)null);
 
         // Act
         var result = await _controller.GetRestaurant("nonexistent");
@@ -119,7 +119,7 @@ public class RestaurantsControllerTests
         };
 
         var addedRestaurant = new Restaurant { Id = "60d5ec49f1b2c8b4e8f1a1a1", Name = "New Cafe", Cuisine = "American", Borough = "Bronx" };
-        _mockService.Setup(s => s.AddRestaurant(It.IsAny<Restaurant>())).Returns(addedRestaurant);
+        _mockService.Setup(s => s.AddRestaurantAsync(It.IsAny<Restaurant>())).ReturnsAsync(addedRestaurant);
 
         // Act
         var result = await _controller.PostRestaurant(inputDto);
@@ -141,14 +141,14 @@ public class RestaurantsControllerTests
     public async Task PutRestaurant_WhenNotFound_ShouldReturnNotFound()
     {
         // Arrange
-        _mockService.Setup(s => s.GetRestaurantById("5")).Returns((Restaurant?)null);
-
         var input = new RestaurantInputDto 
         { 
             Name = "Updated", 
             Cuisine = "French", 
             Borough = "Manhattan" 
         };
+
+        _mockService.Setup(s => s.GetRestaurantByIdAsync("5")).ReturnsAsync((Restaurant?)null);
 
         // Act
         var result = await _controller.UpdateRestaurant("5", input);
@@ -168,8 +168,8 @@ public class RestaurantsControllerTests
             Cuisine = "Mexican", 
             Borough = "Queens" 
         };
-        _mockService.Setup(s => s.GetRestaurantById("60d5ec49f1b2c8b4e8f1a1a4")).Returns(existing);
-        _mockService.Setup(s => s.EditRestaurant(It.IsAny<Restaurant>())).Returns((Restaurant r) => r);
+        _mockService.Setup(s => s.GetRestaurantByIdAsync("60d5ec49f1b2c8b4e8f1a1a4")).ReturnsAsync(existing);
+        _mockService.Setup(s => s.EditRestaurantAsync(It.IsAny<Restaurant>())).ReturnsAsync((Restaurant r) => r);
 
         var input = new RestaurantInputDto 
         { 
@@ -192,13 +192,13 @@ public class RestaurantsControllerTests
         Assert.Equal("Manhattan", dto.Borough);
 
         // Verify Edit was called
-        _mockService.Verify(s => s.EditRestaurant(It.IsAny<Restaurant>()), Times.Once);
+        _mockService.Verify(s => s.EditRestaurantAsync(It.IsAny<Restaurant>()), Times.Once);
     }
 
     [Fact]
     public async Task DeleteReservation_WhenNotFound_ShouldReturnNotFound() {
         // Arrange
-        _mockService.Setup(s => s.GetRestaurantById("60d5ec49f1b2c8b4e8f1a1a5")).Returns((Restaurant?)null);
+        _mockService.Setup(s => s.GetRestaurantByIdAsync("60d5ec49f1b2c8b4e8f1a1a5")).ReturnsAsync((Restaurant?)null);
 
         // Act
         var result = await _controller.DeleteRestaurant("60d5ec49f1b2c8b4e8f1a1a5");
@@ -218,7 +218,7 @@ public class RestaurantsControllerTests
             Cuisine = "TestToDelete",
             Name = "TestToDelete"
         };
-        _mockService.Setup(s => s.GetRestaurantById("60d5ec49f1b2c8b4e8f1a1a5")).Returns(reservation);
+        _mockService.Setup(s => s.GetRestaurantByIdAsync("60d5ec49f1b2c8b4e8f1a1a5")).ReturnsAsync(reservation);
 
         // Act
         var result = await _controller.DeleteRestaurant("60d5ec49f1b2c8b4e8f1a1a5");
@@ -227,6 +227,6 @@ public class RestaurantsControllerTests
         Assert.IsType<OkResult>(result);
 
         // Verify Delete was called
-        _mockService.Verify(s => s.DeleteRestaurant(It.IsAny<Restaurant>()), Times.Once);
+        _mockService.Verify(s => s.DeleteRestaurantAsync(It.IsAny<Restaurant>()), Times.Once);
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 using WebAPI.Data;
 using WebAPI.Models;
 
@@ -13,10 +14,10 @@ namespace WebAPI.Services
             _context = context;
         }
 
-        public PagedResult<Product> GetAll(int skip, int take)
+        public async Task<PagedResult<Product>> GetAllAsync(int skip, int take)
         {
-            int totalCount = _context.Products.Count();
-            List<Product> items = _context.Products.Skip(skip).Take(take).ToList();
+            int totalCount = await _context.Products.CountAsync();
+            List<Product> items = await _context.Products.Skip(skip).Take(take).ToListAsync();
             return new PagedResult<Product>
             {
                 Items = items,
@@ -26,32 +27,32 @@ namespace WebAPI.Services
             };
         }
 
-        public Product? GetById(int id)
+        public async Task<Product?> GetByIdAsync(int id)
         {
-            return _context.Products.Find(id);
+            return await _context.Products.FindAsync(id);
         }
 
-        public Product Add(Product product)
+        public async Task<Product> AddAsync(Product product)
         {
-            _context.Products.Add(product);
-            _context.SaveChanges();
+            await _context.Products.AddAsync(product);
+            await _context.SaveChangesAsync();
             return product;
         }
 
-        public Product Update(Product product)
+        public async Task<Product> UpdateAsync(Product product)
         {
             _context.Products.Update(product);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
             return product;
         }
 
-        public void Delete(int id)
+        public async Task DeleteAsync(int id)
         {
-            var product = _context.Products.Find(id);
+            var product = await _context.Products.FindAsync(id);
             if (product != null)
             {
                 _context.Products.Remove(product);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
         }
     }

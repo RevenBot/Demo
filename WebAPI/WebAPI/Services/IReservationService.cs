@@ -4,13 +4,13 @@ namespace WebAPI.Services
 {
     public interface IReservationService
     {
-        PagedResult<Reservation> GetAllReservations(int skip, int take);
-        Reservation? GetReservationById(string id);
+        Task<PagedResult<Reservation>> GetAllReservationsAsync(int skip, int take);
+        Task<Reservation?> GetReservationByIdAsync(string id);
 
-        Reservation AddReservation(Reservation newReservation);
+        Task<Reservation> AddReservationAsync(Reservation newReservation);
 
-        Reservation EditReservation(Reservation updatedReservation);
+        Task<Reservation> EditReservationAsync(Reservation updatedReservation);
 
-        void DeleteReservation(Reservation reservationToDelete);
+        Task DeleteReservationAsync(Reservation reservationToDelete);
     }
 }

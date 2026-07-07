@@ -13,10 +13,10 @@ namespace WebAPI.Services
             _dbContext = dbContext;
         }
 
-        public PagedResult<Reservation> GetAllReservations(int skip, int take)
+        public async Task<PagedResult<Reservation>> GetAllReservationsAsync(int skip, int take)
         {
-            int totalCount = _dbContext.Reservations.Count();
-            var items = _dbContext.Reservations.Skip(skip).Take(take).ToList();
+            int totalCount = await _dbContext.Reservations.CountAsync();
+            var items = await _dbContext.Reservations.Skip(skip).Take(take).ToListAsync();
             
             return new PagedResult<Reservation>
             {
@@ -27,40 +27,40 @@ namespace WebAPI.Services
             };
         }
 
-        public Reservation AddReservation(Reservation reservation)
+        public async Task<Reservation?> GetReservationByIdAsync(string id)
         {
-            _dbContext.Reservations.Add(reservation);
-            _dbContext.SaveChanges();
+            return await _dbContext.Reservations.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
+        }
+
+        public async Task<Reservation> AddReservationAsync(Reservation reservation)
+        {
+            await _dbContext.Reservations.AddAsync(reservation);
+            await _dbContext.SaveChangesAsync();
 
             return reservation;
         }
 
-        public Reservation EditReservation(Reservation updated)
+        public async Task<Reservation> EditReservationAsync(Reservation updated)
         {
             _dbContext.Reservations.Update(updated);
-            _dbContext.SaveChanges();
+            await _dbContext.SaveChangesAsync();
 
             return updated;
         }
 
-        public void DeleteReservation(Reservation reservation)
+        public async Task DeleteReservationAsync(Reservation reservation)
         {
-            var reservationToDelete = _dbContext.Reservations.FirstOrDefault(b => b.Id == reservation.Id);
+            var reservationToDelete = await _dbContext.Reservations.FirstOrDefaultAsync(b => b.Id == reservation.Id);
             
             if (reservationToDelete != null)
             {
                 _dbContext.Reservations.Remove(reservationToDelete);
-                _dbContext.SaveChanges();
+                await _dbContext.SaveChangesAsync();
             }
             else
             {
                 throw new ArgumentException("The reservation to delete cannot be found.");
             }
-        }
-
-        public Reservation? GetReservationById(string id)
-        {
-            return _dbContext.Reservations.AsNoTracking().FirstOrDefault(b => b.Id == id);
         }
     }
 }

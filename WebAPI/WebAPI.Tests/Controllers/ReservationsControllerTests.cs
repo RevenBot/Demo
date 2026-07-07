@@ -40,7 +40,7 @@ public class ReservationsControllerTests
                 Date = DateTime.Parse("2024-07-23T20:00:00")
             }
         };
-        _mockService.Setup(s => s.GetAllReservations(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Reservation> { Items = reservations, TotalCount = 2, PageSize = 10, CurrentPage = 1 });
+        _mockService.Setup(s => s.GetAllReservationsAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new PagedResult<Reservation> { Items = reservations, TotalCount = 2, PageSize = 10, CurrentPage = 1 });
 
         // Act
         var result = await _controller.GetReservations(new PaginationParamsDto());
@@ -64,7 +64,7 @@ public class ReservationsControllerTests
     public async Task GetReservations_ShouldReturnEmptyList_WhenNoReservations()
     {
         // Arrange
-        _mockService.Setup(s => s.GetAllReservations(It.IsAny<int>(), It.IsAny<int>())).Returns(new PagedResult<Reservation> { Items = new List<Reservation>(), TotalCount = 0, PageSize = 10, CurrentPage = 1 });
+        _mockService.Setup(s => s.GetAllReservationsAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new PagedResult<Reservation> { Items = new List<Reservation>(), TotalCount = 0, PageSize = 10, CurrentPage = 1 });
 
         // Act
         var result = await _controller.GetReservations(new PaginationParamsDto());
@@ -90,7 +90,7 @@ public class ReservationsControllerTests
             RestaurantName = "Thai Garden",
             Date = DateTime.Parse("2024-07-25T19:30:00")
         };
-        _mockService.Setup(s => s.GetReservationById("60d5ec49f1b2c8b4e8f1a1a3")).Returns(reservation);
+        _mockService.Setup(s => s.GetReservationByIdAsync("60d5ec49f1b2c8b4e8f1a1a3")).ReturnsAsync(reservation);
 
         // Act
         var result = await _controller.GetReservation("60d5ec49f1b2c8b4e8f1a1a3");
@@ -110,7 +110,7 @@ public class ReservationsControllerTests
     public async Task GetReservation_WhenNotFound_ShouldReturnNotFound()
     {
         // Arrange
-        _mockService.Setup(s => s.GetReservationById("nonexistent")).Returns((Reservation?)null);
+        _mockService.Setup(s => s.GetReservationByIdAsync("nonexistent")).ReturnsAsync((Reservation?)null);
 
         // Act
         var result = await _controller.GetReservation("nonexistent");
@@ -130,7 +130,7 @@ public class ReservationsControllerTests
         };
 
         var addedReservation = new Reservation { Id = "60d5ec49f1b2c8b4e8f1a1a1", RestaurantId = inputDto.RestaurantId, Date = inputDto.Date, RestaurantName = "Test Restaurant" };
-        _mockService.Setup(s => s.AddReservation(It.IsAny<Reservation>())).Returns(addedReservation);
+        _mockService.Setup(s => s.AddReservationAsync(It.IsAny<Reservation>())).ReturnsAsync(addedReservation);
 
         // Act
         var result = await _controller.PostReservation(inputDto);
@@ -151,7 +151,7 @@ public class ReservationsControllerTests
     public async Task PutReservation_WhenNotFound_ShouldReturnNotFound()
     {
         // Arrange
-        _mockService.Setup(s => s.GetReservationById("5")).Returns((Reservation?)null);
+        _mockService.Setup(s => s.GetReservationByIdAsync("5")).ReturnsAsync((Reservation?)null);
 
         var input = new ReservationInputDto
         {
@@ -175,8 +175,8 @@ public class ReservationsControllerTests
             RestaurantId = "60d5ec49f1b2c8b4e8f1a1a1",
             Date = DateTime.Parse("2024-07-22T19:00:00")
         };
-        _mockService.Setup(s => s.GetReservationById("60d5ec49f1b2c8b4e8f1a1a5")).Returns(existing);
-        _mockService.Setup(s => s.EditReservation(It.IsAny<Reservation>())).Returns(existing);
+        _mockService.Setup(s => s.GetReservationByIdAsync("60d5ec49f1b2c8b4e8f1a1a5")).ReturnsAsync(existing);
+        _mockService.Setup(s => s.EditReservationAsync(It.IsAny<Reservation>())).ReturnsAsync(existing);
 
         var input = new ReservationInputDto
         {
@@ -195,14 +195,14 @@ public class ReservationsControllerTests
         Assert.Equal(input.Date, dto.Date);
 
         // Verify Edit was called
-        _mockService.Verify(s => s.EditReservation(It.IsAny<Reservation>()), Times.Once);
+        _mockService.Verify(s => s.EditReservationAsync(It.IsAny<Reservation>()), Times.Once);
     }
 
     [Fact]
     public async Task DeleteReservation_WhenNotFound_ShouldReturnNotFound()
     {
         // Arrange
-        _mockService.Setup(s => s.GetReservationById("60d5ec49f1b2c8b4e8f1a1a5")).Returns((Reservation?)null);
+        _mockService.Setup(s => s.GetReservationByIdAsync("60d5ec49f1b2c8b4e8f1a1a5")).ReturnsAsync((Reservation?)null);
 
         // Act
         var result = await _controller.DeleteReservation("60d5ec49f1b2c8b4e8f1a1a5");
@@ -221,7 +221,7 @@ public class ReservationsControllerTests
             RestaurantId = "60d5ec49f1b2c8b4e8f1a1a1",
             Date = DateTime.Parse("2024-07-22T19:00:00")
         };
-        _mockService.Setup(s => s.GetReservationById("60d5ec49f1b2c8b4e8f1a1a5")).Returns(reservation);
+        _mockService.Setup(s => s.GetReservationByIdAsync("60d5ec49f1b2c8b4e8f1a1a5")).ReturnsAsync(reservation);
 
         // Act
         var result = await _controller.DeleteReservation("60d5ec49f1b2c8b4e8f1a1a5");
@@ -230,6 +230,6 @@ public class ReservationsControllerTests
         Assert.IsType<OkResult>(result);
 
         // Verify Delete was called
-        _mockService.Verify(s => s.DeleteReservation(It.IsAny<Reservation>()), Times.Once);
+        _mockService.Verify(s => s.DeleteReservationAsync(It.IsAny<Reservation>()), Times.Once);
     }
 }

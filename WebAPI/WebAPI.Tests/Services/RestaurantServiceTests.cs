@@ -48,7 +48,7 @@ public class RestaurantServiceTests : IDisposable
         };
 
         // Act
-        var added = service.AddRestaurant(restaurant);
+        var added = await service.AddRestaurantAsync(restaurant);
         
         // Assert
         Assert.NotNull(added);
@@ -73,7 +73,7 @@ public class RestaurantServiceTests : IDisposable
         var service = new RestaurantService(_context!);
 
         // Act
-        var result = service.GetAllRestaurants(0, 10);
+        var result = await service.GetAllRestaurantsAsync(0, 10);
 
         // Assert
         Assert.NotNull(result);
@@ -84,7 +84,7 @@ public class RestaurantServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetRestaurantById_ShouldReturnRestaurant_WhenExists()
+    public async Task GetRestaurantById_ShouldReturnRestaurant_WhenExists()
     {
         // Arrange
         var expected = new Restaurant 
@@ -100,7 +100,7 @@ public class RestaurantServiceTests : IDisposable
         var service = new RestaurantService(_context!);
 
         // Act
-        var result = service.GetRestaurantById(expected.Id);
+        var result = await service.GetRestaurantByIdAsync(expected.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -108,21 +108,21 @@ public class RestaurantServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetRestaurantById_ShouldReturnNull_WhenDoesNotExist()
+    public async Task GetRestaurantById_ShouldReturnNull_WhenDoesNotExist()
     {
         // Arrange
         ReloadContext();
         var service = new RestaurantService(_context!);
 
         // Act
-        var result = service.GetRestaurantById("nonexistent");
+        var result = await service.GetRestaurantByIdAsync("nonexistent");
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public void EditRestaurant_ShouldModifyExisting()
+    public async Task EditRestaurant_ShouldModifyExisting()
     {
         // Arrange
         var restaurant = new Restaurant 
@@ -141,7 +141,7 @@ public class RestaurantServiceTests : IDisposable
         restaurant.Name = "New Name";
         restaurant.Cuisine = "French";
         restaurant.Borough = "Manhattan";
-        var edited = service.EditRestaurant(restaurant);
+        var edited = await service.EditRestaurantAsync(restaurant);
 
         // Assert
         Assert.NotNull(edited);
@@ -153,7 +153,7 @@ public class RestaurantServiceTests : IDisposable
         Assert.Equal("French", updated.Cuisine);
     }
     [Fact]
-    public void EditRestaurant_NonExistent_ShouldThrow()
+    public async Task EditRestaurant_NonExistent_ShouldThrow()
     {
         // Arrange - no reservations exist
         ReloadContext();
@@ -168,12 +168,12 @@ public class RestaurantServiceTests : IDisposable
         };
 
         // Act & Assert
-        var ex = Record.Exception(() => service.EditRestaurant(fakeRes));
+        var ex = await Record.ExceptionAsync(async () => await service.EditRestaurantAsync(fakeRes));
         Assert.NotNull(ex);
     }
 
     [Fact]
-    public void Delete_Restaurant_ShouldRemoveFromDatabase()
+    public async Task Delete_Restaurant_ShouldRemoveFromDatabase()
     {
         // Arrange
         var restaurant = new Restaurant 
@@ -189,7 +189,7 @@ public class RestaurantServiceTests : IDisposable
         var service = new RestaurantService(_context!);
 
         // Act
-        service.DeleteRestaurant(restaurant);
+        await service.DeleteRestaurantAsync(restaurant);
 
         // Assert
         var deleted = _context!.Restaurants.Find(restaurant.Id);
@@ -197,7 +197,7 @@ public class RestaurantServiceTests : IDisposable
     }
 
     [Fact]
-    public void Delete_NonExistent_ShouldThrow()
+    public async Task Delete_NonExistent_ShouldThrow()
     {
         // Arrange
         var fakeRestaurant = new Restaurant 
@@ -212,7 +212,7 @@ public class RestaurantServiceTests : IDisposable
         var service = new RestaurantService(_context!);
 
         // Act & Assert - should throw because DB won't have the restaurant
-        var ex = Record.Exception(() => service.DeleteRestaurant(fakeRestaurant));
+        var ex = await Record.ExceptionAsync(async () => await service.DeleteRestaurantAsync(fakeRestaurant));
         
         // The service throws ArgumentException when restaurant not found
         Assert.NotNull(ex);
