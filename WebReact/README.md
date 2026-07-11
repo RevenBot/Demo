@@ -1,30 +1,48 @@
-# React + TypeScript + Vite
+# WebReact
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 18 + TypeScript SPA for the Demo monorepo.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 18** with hooks
+- **TypeScript** (strict mode, `noUnusedLocals`, `noUnusedParameters`)
+- **Vite 5** — dev server, build, HMR
+- **Mantine v7** — UI components
+- **wouter** — routing (not react-router)
+- **axios** — HTTP client
 
-## Expanding the ESLint configuration
+## Scripts
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json', './tsconfig.app.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
+```bash
+npm install       # install dependencies
+npm run dev       # Vite dev server → http://localhost:5173
+npm run build     # tsc -b && vite build (typecheck fails the build)
+npm run lint      # eslint --max-warnings 0 (any warning fails CI)
+npm run preview   # preview production build
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+## API Proxy
+
+In dev mode, the SPA makes HTTP requests directly to `http://localhost:5129` (the WebAPI dev server). There is no Vite proxy configured.
+
+In the containerized deployment, `nginx` proxies `/api/` and `/swagger/` to the `myapi` service (`:8080`). The SPA is served at `http://localhost:80`.
+
+## Resources
+
+The app manages three resource domains via the API:
+
+- **Products** — CRUD listing
+- **Restaurants** — CRUD listing
+- **Reservations** — CRUD listing
+
+## Linting
+
+ESLint runs with `--max-warnings 0` — **any warning fails CI**. Key rules:
+
+- `noUnusedLocals` / `noUnusedParameters` enforced by `tsconfig.app.json`
+- `exhaustive-deps` requires full object references in `useEffect` arrays (e.g. `[params]` not `[params?.id]`)
+- `@typescript-eslint/no-explicit-any` is **off**
+
+## Routing
+
+Uses **`wouter`**, not `react-router`. Routes are defined in `src/App.tsx`.
