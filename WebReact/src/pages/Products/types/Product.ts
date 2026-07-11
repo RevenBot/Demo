@@ -1,5 +1,10 @@
 export interface Product {
-  id?: number;
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface ProductInput {
   name: string;
   price: number;
 }
