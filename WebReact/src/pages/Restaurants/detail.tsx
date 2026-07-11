@@ -1,50 +1,75 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useRoute } from 'wouter';
-import { Link } from 'wouter';
+import { useEffect, useState } from 'react';
+import { Link, useRoute, useLocation } from 'wouter';
+import api from '../../lib/api';
+import { Container, Card, Title, Text, Button, Group, Loader, Alert } from '@mantine/core';
 import { Restaurant } from './types/Restaurant';
 
-const RestaurantDetail: React.FC = () => {
+function RestaurantDetail() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [, setLocation] = useLocation();
   const [, params] = useRoute('/restaurants/:id');
 
   useEffect(() => {
-    console.log(params)
     if (params && params.id) {
-      axios.get<Restaurant>(`/api/restaurants/${params.id}`)
-        .then(response => {
-          setRestaurant(response.data);
-          console.log(response)
-        })
-        .catch(err => setError(err.message));
+      api
+        .get<Restaurant>(`/restaurants/${params.id}`)
+        .then((response) => setRestaurant(response.data))
+        .catch((err: any) =>
+          setError(err.message ?? 'Failed to load restaurant'),
+        );
     }
-  }, [params?.id]);
+  }, [params]);
 
   const handleDelete = () => {
-    if (restaurant) {
-      axios.delete(`/api/restaurants/${restaurant._id}`)
-        .then(() => {
-          window.location.href = '/restaurants';
-        })
-        .catch(err => setError(err.message));
-    }
+    if (!restaurant) return;
+    setDeleting(true);
+    api
+      .delete(`/restaurants/${restaurant.id}`)
+      .then(() => setLocation('/restaurants'))
+      .catch((err: any) => {
+        setError(err.message ?? 'Failed to delete restaurant');
+        setDeleting(false);
+      });
   };
 
-  if (!restaurant) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (!restaurant && !error) {
+    return (
+      <Container size="md" py="xl">
+        <Loader color="brand.5" />
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container size="md" py="xl">
+        <Alert color="red" title="Error">
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
-    <div>
-      <h1>Restaurant Details</h1>
-      <p>Name: {restaurant.name}</p>
-      <p>Cuisine: {restaurant.cuisine}</p>
-      <p>Borough: {restaurant.borough}</p>
-      <Link href={`/restaurants/edit/${restaurant._id}`}>Edit</Link>
-      <button onClick={handleDelete}>Delete</button>
-    </div>
+    <Container size="md" py="xl">
+      <Card shadow="sm" radius="md" padding="lg">
+        <Title order={2}>Restaurant Details</Title>
+        <Text mt="md"><strong>Name:</strong> {restaurant!.name}</Text>
+        <Text><strong>Cuisine:</strong> {restaurant!.cuisine}</Text>
+        <Text><strong>Borough:</strong> {restaurant!.borough}</Text>
+        <Group mt="lg">
+          <Button component={Link} to={`/restaurants/edit/${restaurant!.id}`} variant="light">
+            Edit
+          </Button>
+          <Button color="red" loading={deleting} onClick={handleDelete}>
+            Delete
+          </Button>
+        </Group>
+      </Card>
+    </Container>
   );
-};
+}
 
 export default RestaurantDetail;
-

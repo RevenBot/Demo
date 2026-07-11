@@ -1,17 +1,16 @@
-﻿using MongoDB.Bson;
-using WebAPI.Models;
+﻿using WebAPI.Models;
 
 namespace WebAPI.Services
 {
     public interface IRestaurantService
     {
-        IEnumerable<Restaurant> GetAllRestaurants();
-        Restaurant? GetRestaurantById(ObjectId id);
+        Task<PagedResult<Restaurant>> GetAllRestaurantsAsync(int skip, int take);
+        Task<Restaurant?> GetRestaurantByIdAsync(string id);
 
-        void AddRestaurant(Restaurant newRestaurant);
+        Task<Restaurant> AddRestaurantAsync(Restaurant newRestaurant);
 
-        void EditRestaurant(Restaurant updatedRestaurant);
+        Task<Restaurant> EditRestaurantAsync(Restaurant updatedRestaurant);
 
-        void DeleteRestaurant(Restaurant restaurantToDelete);
+        Task DeleteRestaurantAsync(Restaurant restaurantToDelete);
     }
 }

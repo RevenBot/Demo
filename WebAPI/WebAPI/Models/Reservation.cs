@@ -10,36 +10,28 @@ namespace WebAPI.Models
     [Collection("reservations")]
     public class Reservation
     {
+        // Primary key - string for URL/API convenience, stored as native ObjectId in DB
         [BsonId]
-        public ObjectId Id { get; set; }
-
         [BsonRepresentation(BsonType.ObjectId)]
-        public ObjectId? RestaurantId { get; set; }
+        public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
+        // Foreign key to restaurant (native ObjectId stored in MongoDB)
+        [BsonElement("restaurantId")]
+        [BsonRepresentation(BsonType.ObjectId)]
+        [JsonPropertyName("restaurantId")]
+        public string? RestaurantId { get; set; }
 
+        // Cached name for display purposes - no need for ObjectId representation
+        [BsonElement("restaurantName")]
+        [JsonPropertyName("restaurantName")]
         public string? RestaurantName { get; set; }
 
+        // Date/time field with explicit BSON type mapping
         [Required(ErrorMessage = "The date and time is required to make this reservation")]
         [Display(Name = "Date")]
-        public DateTime date { get; set; }
-
-        [JsonPropertyName("_id")]
-        public string _Id
-        {
-            get
-            {
-                return Id.ToString();
-            }
-        }
-        [JsonPropertyName("_restaurantId")]
-        public string _RestaurantId
-        {
-            get
-            {
-                return RestaurantId.ToString() ?? string.Empty;
-            }
-        }
-
+        [BsonElement("date")]
+        [JsonPropertyName("date")]
+        public DateTime Date { get; set; }
 
     }
 }

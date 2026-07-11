@@ -1,62 +1,84 @@
-// src/ProductForm.tsx
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
-import { Product } from './types/Product';
+import { Container, Card, Title, TextInput, NumberInput, Button, Stack, Alert } from '@mantine/core';
+import api from '../../lib/api';
+import { Product, ProductInput } from './types/Product';
 
-const ProductForm: React.FC = () => {
-  const [product, setProduct] = useState<Product>({ name: '', price: 0 });
-  const [id, setId] = useState<number | null>(null);
+function ProductForm() {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState<number | ''>('');
+  const [id, setId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [, setLocation] = useLocation();
   const [, params] = useRoute('/products/edit/:id');
 
   useEffect(() => {
     if (params && params.id) {
-      setId(Number(params.id));
-      axios.get<Product>(`/api/products/${params.id}`)
-        .then(response => setProduct(response.data))
-        .catch(err => setError(err.message));
+      setId(params.id);
+      api
+        .get<Product>(`/products/${params.id}`)
+        .then((response) => {
+          setName(response.data.name);
+          setPrice(response.data.price);
+        })
+        .catch((err: any) =>
+          setError(err.message ?? 'Failed to load product'),
+        );
     }
-  }, [params?.id]);
+  }, [params]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProduct({ ...product, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const body: ProductInput = { name, price: price === '' ? 0 : price };
+    setSubmitting(true);
     const request = id
-      ? axios.put(`/api/products/${id}`, product)
-      : axios.post('/api/products', product);
+      ? api.put(`/products/${id}`, body)
+      : api.post('/products', body);
 
-    request.then(() => {
-      setLocation('/products');
-    }).catch(err => {
-      setError(err.message);
-    });
+    request
+      .then(() => setLocation('/products'))
+      .catch((err: any) => setError(err.message ?? 'Failed to save product'))
+      .finally(() => setSubmitting(false));
   };
 
   return (
-    <div>
-      <h1>{id ? 'Edit Product' : 'Create Product'}</h1>
-      {error && <div>Error: {error}</div>}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name</label>
-          <input type="text" name="name" value={product.name} onChange={handleChange} required />
-        </div>
-        <div>
-          <label>Price</label>
-          <input type="number" name="price" value={product.price} onChange={handleChange} required />
-        </div>
-        <button type="submit">Save</button>
-      </form>
-    </div>
+    <Container size="sm" py="xl">
+      <Card withBorder shadow="sm" radius="md">
+        <Title order={2} mb="md">
+          {id ? 'Edit Product' : 'Create Product'}
+        </Title>
+
+        {error && (
+          <Alert color="red" title="Error" mb="md">
+            {error}
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <Stack>
+            <TextInput
+              label="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <NumberInput
+              label="Price"
+              value={price}
+              onChange={(val) => setPrice(typeof val === 'number' ? val : val === '' ? ('' as const) : Number(val))}
+              min={0}
+              decimalScale={2}
+              required
+            />
+            <Button type="submit" loading={submitting}>
+              {id ? 'Update' : 'Create'}
+            </Button>
+          </Stack>
+        </form>
+      </Card>
+    </Container>
   );
-};
+}
 
 export default ProductForm;
-
-
-

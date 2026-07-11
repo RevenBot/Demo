@@ -2,6 +2,7 @@
 using MongoDB.Bson;
 using WebAPI.Models;
 using WebAPI.Services;
+using WebAPI.Dto;
 
 namespace WebAPI.Controllers
 {
@@ -9,69 +10,106 @@ namespace WebAPI.Controllers
     [ApiController]
     public class ReservationsController : Controller
     {
-        private readonly IReservationService _ReservationService;
+        private readonly IReservationService _reservationService;
 
-        public ReservationsController(IReservationService ReservationService)
+        public ReservationsController(IReservationService reservationService)
         {
-            _ReservationService = ReservationService;
+            _reservationService = reservationService;
         }
+        
+        // GET /api/reservations - returns list of reservations with id fields and pagination
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Reservation>>> GetReservations()
+        public async Task<ActionResult<PagedResult<ReservationOutputDto>>> GetReservations([FromQuery] PaginationParamsDto paramsDto)
         {
-            return await Task.FromResult( _ReservationService.GetAllReservations().ToList());
+            var skip = (paramsDto.PageNumber - 1) * paramsDto.PageSize;
+
+            var pagedResult = await _reservationService.GetAllReservationsAsync(skip, paramsDto.PageSize);
+
+            return Ok(new PagedResult<ReservationOutputDto>
+            {
+                Items = pagedResult.Items.Select(r => new ReservationOutputDto
+                {
+                    Id = r.Id,
+                    RestaurantId = r.RestaurantId,
+                    RestaurantName = r.RestaurantName,
+                    Date = r.Date
+                }),
+                TotalCount = pagedResult.TotalCount,
+                PageSize = pagedResult.PageSize,
+                CurrentPage = pagedResult.CurrentPage
+            });
         }
 
+        // GET /api/reservations/{id} - returns single reservation with id field
         [HttpGet("{id}")]
-        public async Task<ActionResult<Reservation>> GetReservation(ObjectId id)
+        public async Task<ActionResult<ReservationOutputDto>> GetReservation(string id)
         {
-            var product = _ReservationService.GetReservationById(id);
-            if(product is null)
-            {
-                return NotFound();
-            }
+            var reservation = await _reservationService.GetReservationByIdAsync(id);
+            if (reservation is null) return NotFound();
 
-            return await Task.FromResult(product);
+            return Ok(new ReservationOutputDto
+            {
+                Id = reservation.Id,
+                RestaurantId = reservation.RestaurantId,
+                RestaurantName = reservation.RestaurantName,
+                Date = reservation.Date
+            });
         }
 
+        // POST /api/reservations - no id in input (server auto-generates)
         [HttpPost]
-        public async Task<ActionResult<Reservation>> PostReservation(Reservation restaurant)
+        public async Task<ActionResult<ReservationOutputDto>> PostReservation(ReservationInputDto input)
         {
-            _ReservationService.AddReservation(restaurant);
+            var reservation = new Reservation
+            {
+                RestaurantId = input.RestaurantId,
+                Date = input.Date
+            };
 
-            await Task.CompletedTask;
+            var created = await _reservationService.AddReservationAsync(reservation);
 
-            return CreatedAtAction("GetReservation", new { id = restaurant.Id }, restaurant);
+            return CreatedAtAction("GetReservation", 
+                new { id = created.Id }, 
+                new ReservationOutputDto
+                {
+                    Id = created.Id,
+                    RestaurantId = created.RestaurantId,
+                    RestaurantName = created.RestaurantName,
+                    Date = created.Date
+                });
         }
 
+        // PUT /api/reservations/{id} - updates via string path param (no id in body)
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutReservation(ObjectId id, Reservation restaurant)
+        public async Task<IActionResult> PutReservation(string id, [FromBody] ReservationInputDto input)
         {
-            if (id != restaurant.Id)
+            var existing = await _reservationService.GetReservationByIdAsync(id);
+            if (existing is null) return NotFound();
+
+            existing.Date = input.Date;
+
+            var updated = await _reservationService.EditReservationAsync(existing);
+
+            ReservationOutputDto reservationOutputDto = new ReservationOutputDto
             {
-                return BadRequest();
-            }
+                Id = updated.Id,
+                RestaurantId = updated.RestaurantId,
+                RestaurantName = updated.RestaurantName,
+                Date = updated.Date
+            };
 
-            _ReservationService.EditReservation(restaurant);
-
-            return Ok();
+            return Ok(reservationOutputDto);
         }
 
+        // DELETE /api/reservations/{id} - deletes via string path param
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReservation(ObjectId id)
+        public async Task<IActionResult> DeleteReservation(string id)
         {
-            var product = _ReservationService.GetReservationById(id);
-            if(product is null)
-            {
-                return NotFound();
-            }
-            _ReservationService.DeleteReservation(product);
+            var reservation = await _reservationService.GetReservationByIdAsync(id);
+            if (reservation is null) return NotFound();
+
+            await _reservationService.DeleteReservationAsync(reservation);
             return Ok();
         }
-
-        private bool ProductExists(int id)
-        {
-            return false;
-        }
-
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MongoDB.Bson;
-using MongoDB.Driver;
 using WebAPI.Models;
 
 namespace WebAPI.Services
@@ -8,31 +7,30 @@ namespace WebAPI.Services
     public class RestaurantService : IRestaurantService
     {
         private readonly RestaurantReservationDbContext _restaurantDbContext;
+        
         public RestaurantService(RestaurantReservationDbContext restaurantDbContext)
         {
             _restaurantDbContext = restaurantDbContext;
         }
 
-        public void AddRestaurant(Restaurant restaurant)
+        public async Task<Restaurant> AddRestaurantAsync(Restaurant restaurant)
         {
-            _restaurantDbContext.Restaurants.Add(restaurant);
-
-            _restaurantDbContext.ChangeTracker.DetectChanges();
-            Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-
-            _restaurantDbContext.SaveChanges();
+            // Id already set via default value in model, no need to generate here
+            await _restaurantDbContext.Restaurants.AddAsync(restaurant);
+            await _restaurantDbContext.SaveChangesAsync();
+            return restaurant;
         }
 
-        public void DeleteRestaurant(Restaurant restaurant)
+        public async Task DeleteRestaurantAsync(Restaurant restaurant)
         {
-            var restaurantToDelete = _restaurantDbContext.Restaurants.Where(c => c.Id == restaurant.Id).FirstOrDefault();
-
+            var restaurantToDelete = await _restaurantDbContext.Restaurants.FirstOrDefaultAsync(c => c.Id == restaurant.Id);
+            
             if (restaurantToDelete != null)
             {
                 _restaurantDbContext.Restaurants.Remove(restaurantToDelete);
                 _restaurantDbContext.ChangeTracker.DetectChanges();
                 Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-                _restaurantDbContext.SaveChanges();
+                await _restaurantDbContext.SaveChangesAsync();
             }
             else
             {
@@ -40,39 +38,24 @@ namespace WebAPI.Services
             }
         }
 
-        public void EditRestaurant(Restaurant restaurant)
+        public async Task<Restaurant> EditRestaurantAsync(Restaurant updated)
         {
-            var restaurantToUpdate = _restaurantDbContext.Restaurants.FirstOrDefault(c => c.Id == restaurant.Id);
-
-            if (restaurantToUpdate != null)
-            {
-                restaurantToUpdate.name = restaurant.name;
-                restaurantToUpdate.cuisine = restaurant.cuisine;
-                restaurantToUpdate.borough = restaurant.borough;
-
-                _restaurantDbContext.Restaurants.Update(restaurantToUpdate);
-
-                _restaurantDbContext.ChangeTracker.DetectChanges();
-                Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-
-                _restaurantDbContext.SaveChanges();
-
-            }
-            else
-            {
-                throw new ArgumentException("The restaurant to update cannot be found. ");
-            }
+            _restaurantDbContext.Restaurants.Update(updated);
+            await _restaurantDbContext.SaveChangesAsync();
+            return updated;
         }
 
-        public IEnumerable<Restaurant> GetAllRestaurants()
+        public async Task<PagedResult<Restaurant>> GetAllRestaurantsAsync(int skip, int take)
         {
-            return _restaurantDbContext.Restaurants.OrderByDescending(c => c.Id).Take(20).AsNoTracking().AsEnumerable<Restaurant>();
+            int totalCount = await _restaurantDbContext.Restaurants.CountAsync();
+            var items = await _restaurantDbContext.Restaurants.OrderByDescending(r => r.Id).Skip(skip).Take(take).ToListAsync();
+            return new PagedResult<Restaurant> { Items = items, TotalCount = totalCount, PageSize = take, CurrentPage = (skip / take) + 1 };
         }
 
-        public Restaurant? GetRestaurantById(ObjectId id)
+        // Now accepts string ID directly - no ObjectId conversion needed
+        public async Task<Restaurant?> GetRestaurantByIdAsync(string id)
         {
-            return _restaurantDbContext.Restaurants.FirstOrDefault(c => c.Id == id);
+            return await _restaurantDbContext.Restaurants.FirstOrDefaultAsync(c => c.Id == id);
         }
     }
-
 }

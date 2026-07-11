@@ -6,81 +6,61 @@ namespace WebAPI.Services
 {
     public class ReservationService : IReservationService
     {
-        private readonly RestaurantReservationDbContext _restaurantDbContext;
+        private readonly RestaurantReservationDbContext _dbContext;
 
-        public ReservationService(RestaurantReservationDbContext restaurantDbContext)
+        public ReservationService(RestaurantReservationDbContext dbContext)
         {
-            _restaurantDbContext = restaurantDbContext;
+            _dbContext = dbContext;
         }
-        public void AddReservation(Reservation newReservation)
+
+        public async Task<PagedResult<Reservation>> GetAllReservationsAsync(int skip, int take)
         {
-            var bookedRestaurant = _restaurantDbContext.Restaurants.FirstOrDefault(c => c.Id == newReservation.RestaurantId);
-            if (bookedRestaurant == null)
+            int totalCount = await _dbContext.Reservations.CountAsync();
+            var items = await _dbContext.Reservations.Skip(skip).Take(take).ToListAsync();
+            
+            return new PagedResult<Reservation>
             {
-                throw new ArgumentException("The restaurant to be reserved cannot be found.");
-            }
-
-            newReservation.RestaurantName = bookedRestaurant.name;
-
-            _restaurantDbContext.Reservations.Add(newReservation);
-
-            _restaurantDbContext.ChangeTracker.DetectChanges();
-            Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-
-            _restaurantDbContext.SaveChanges();
+                Items = items,
+                TotalCount = totalCount,
+                PageSize = take,
+                CurrentPage = (skip / take) + 1
+            };
         }
 
-        public void DeleteReservation(Reservation reservation)
+        public async Task<Reservation?> GetReservationByIdAsync(string id)
         {
-            var reservationToDelete = _restaurantDbContext.Reservations.FirstOrDefault(b => b.Id == reservation.Id);
+            return await _dbContext.Reservations.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
+        }
 
+        public async Task<Reservation> AddReservationAsync(Reservation reservation)
+        {
+            await _dbContext.Reservations.AddAsync(reservation);
+            await _dbContext.SaveChangesAsync();
+
+            return reservation;
+        }
+
+        public async Task<Reservation> EditReservationAsync(Reservation updated)
+        {
+            _dbContext.Reservations.Update(updated);
+            await _dbContext.SaveChangesAsync();
+
+            return updated;
+        }
+
+        public async Task DeleteReservationAsync(Reservation reservation)
+        {
+            var reservationToDelete = await _dbContext.Reservations.FirstOrDefaultAsync(b => b.Id == reservation.Id);
+            
             if (reservationToDelete != null)
             {
-                _restaurantDbContext.Reservations.Remove(reservationToDelete);
-
-                _restaurantDbContext.ChangeTracker.DetectChanges();
-                Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-
-                _restaurantDbContext.SaveChanges();
+                _dbContext.Reservations.Remove(reservationToDelete);
+                await _dbContext.SaveChangesAsync();
             }
             else
             {
                 throw new ArgumentException("The reservation to delete cannot be found.");
             }
         }
-
-        public void EditReservation(Reservation updatedReservation)
-        {
-            var reservationToUpdate = _restaurantDbContext.Reservations.FirstOrDefault(b => b.Id == updatedReservation.Id);
-
-
-            if (reservationToUpdate != null)
-            {
-                reservationToUpdate.date = updatedReservation.date;
-
-                _restaurantDbContext.Reservations.Update(reservationToUpdate);
-
-                _restaurantDbContext.ChangeTracker.DetectChanges();
-                _restaurantDbContext.SaveChanges();
-
-                Console.WriteLine(_restaurantDbContext.ChangeTracker.DebugView.LongView);
-            }
-            else
-            {
-                throw new ArgumentException("Reservation to be updated cannot be found");
-            }
-
-        }
-
-        public IEnumerable<Reservation> GetAllReservations()
-        {
-            return _restaurantDbContext.Reservations.OrderBy(b => b.date).Take(20).AsNoTracking().AsEnumerable<Reservation>();
-        }
-
-        public Reservation? GetReservationById(ObjectId id)
-        {
-            return _restaurantDbContext.Reservations.AsNoTracking().FirstOrDefault(b => b.Id == id);
-        }
-
     }
 }

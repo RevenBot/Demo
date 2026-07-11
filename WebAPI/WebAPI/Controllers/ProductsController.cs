@@ -1,97 +1,111 @@
 using Microsoft.AspNetCore.Mvc;
-using WebAPI.Data;
 using WebAPI.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+using WebAPI.Services;
+using WebAPI.Dto;
 
-[Route("api/[controller]")]
-[ApiController]
-public class ProductsController : ControllerBase
+namespace WebAPI.Controllers
 {
-    private readonly ApplicationDbContext _context;
-
-    public ProductsController(ApplicationDbContext context)
+    [Route("api/products")]
+    [ApiController]
+    public class ProductsController : Controller
     {
-        _context = context;
-    }
+        private readonly IProductService _productService;
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
-    {
-        return await _context.Products.ToListAsync();
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Product>> GetProduct(int id)
-    {
-        var product = await _context.Products.FindAsync(id);
-
-        if (product == null)
+        public ProductsController(IProductService productService)
         {
-            return NotFound();
+            _productService = productService;
         }
 
-        return product;
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<Product>> PostProduct(Product product)
-    {
-        _context.Products.Add(product);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetProduct", new { id = product.Id }, product);
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutProduct(int id, Product product)
-    {
-        if (id != product.Id)
+        // GET /api/products - returns list of products with id fields
+        [HttpGet]
+        public async Task<ActionResult<PagedResult<ProductOutputDto>>> GetProducts([FromQuery] PaginationParamsDto paramsDto)
         {
-            return BadRequest();
-        }
+            int skip = (paramsDto.PageNumber - 1) * paramsDto.PageSize;
 
-        _context.Entry(product).State = EntityState.Modified;
+            var pagedResult = await _productService.GetAllAsync(skip, paramsDto.PageSize);
 
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!ProductExists(id))
+            return Ok(new PagedResult<ProductOutputDto>
             {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
+                Items = pagedResult.Items.Select(p => new ProductOutputDto
+                {
+                    Id = p.Id.ToString(),
+                    Name = p.Name,
+                    Price = p.Price
+                }).ToList(),
+                TotalCount = pagedResult.TotalCount,
+                PageSize = pagedResult.PageSize,
+                CurrentPage = pagedResult.CurrentPage
+            });
         }
 
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteProduct(int id)
-    {
-        var product = await _context.Products.FindAsync(id);
-        if (product == null)
+        // GET /api/products/{id} - returns single product with id field
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ProductOutputDto>> GetProduct(string id)
         {
-            return NotFound();
+            var product = await _productService.GetByIdAsync(int.Parse(id));
+            if (product is null) return NotFound();
+
+            return Ok(new ProductOutputDto
+            {
+                Id = product.Id.ToString(),
+                Name = product.Name,
+                Price = product.Price
+            });
         }
 
-        _context.Products.Remove(product);
-        await _context.SaveChangesAsync();
+        // POST /api/products - no id in input (server auto-generates)
+        [HttpPost]
+        public async Task<ActionResult<ProductOutputDto>> PostProduct(ProductInputDto input)
+        {
+            var product = new Product
+            {
+                Name = input.Name,
+                Price = input.Price
+            };
 
-        return NoContent();
-    }
+            var added = await _productService.AddAsync(product);
 
-    private bool ProductExists(int id)
-    {
-        return _context.Products.Any(e => e.Id == id);
+            return CreatedAtAction("GetProduct", 
+                new { id = added.Id }, 
+                new ProductOutputDto
+                {
+                    Id = added.Id.ToString(),
+                    Name = added.Name,
+                    Price = added.Price
+                });
+        }
+
+        // PUT /api/products/{id} - updates via string path param (no id in body)
+        [HttpPut("{id}")]
+        public async Task<ActionResult<ProductOutputDto>> PutProduct(string id, [FromBody] ProductInputDto input)
+        {
+            var existing = await _productService.GetByIdAsync(int.Parse(id));
+            if (existing is null) return NotFound();
+
+            // Only update fields that were actually provided in the body
+            if (!string.IsNullOrEmpty(input.Name))
+                existing.Name = input.Name;
+            existing.Price = input.Price;
+
+            var updated = await _productService.UpdateAsync(existing);
+
+            return Ok(new ProductOutputDto
+            {
+                Id = updated.Id.ToString(),
+                Name = updated.Name,
+                Price = updated.Price
+            });
+        }
+
+        // DELETE /api/products/{id} - deletes via string path param
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteProduct(string id)
+        {
+            var product = await _productService.GetByIdAsync(int.Parse(id));
+            if (product is null) return NotFound();
+
+            await _productService.DeleteAsync(int.Parse(id));
+            return Ok();
+        }
     }
 }
-

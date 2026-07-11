@@ -1,17 +1,16 @@
-﻿using MongoDB.Bson;
-using WebAPI.Models;
+﻿using WebAPI.Models;
 
 namespace WebAPI.Services
 {
     public interface IReservationService
     {
-        IEnumerable<Reservation> GetAllReservations();
-        Reservation? GetReservationById(ObjectId id);
+        Task<PagedResult<Reservation>> GetAllReservationsAsync(int skip, int take);
+        Task<Reservation?> GetReservationByIdAsync(string id);
 
-        void AddReservation(Reservation newReservation);
+        Task<Reservation> AddReservationAsync(Reservation newReservation);
 
-        void EditReservation(Reservation updatedReservation);
+        Task<Reservation> EditReservationAsync(Reservation updatedReservation);
 
-        void DeleteReservation(Reservation reservationToDelete);
+        Task DeleteReservationAsync(Reservation reservationToDelete);
     }
 }
