@@ -1,14 +1,16 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
+import { Container, Card, Title, Select, Button, Stack, Alert } from '@mantine/core';
+import { DateTimePicker } from '@mantine/dates';
 import api from '../../lib/api';
-import { Button, PageShell, StatusBanner } from '../../components';
 import { PagedResult } from '../../types/paged';
 import { Restaurant } from '../Restaurants/types/Restaurant';
 import { Reservation, ReservationInput } from './types/Reservation';
+import { parseUtcDate, toUtcIso } from './utils/date';
 
 function ReservationForm() {
   const [restaurantId, setRestaurantId] = useState('');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState<string>('');
   const [id, setId] = useState<string | null>(null);
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,10 @@ function ReservationForm() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const body: ReservationInput = { restaurantId, date };
+    const body: ReservationInput = {
+      restaurantId,
+      date,
+    };
     setSubmitting(true);
     const request = id
       ? api.put(`/reservations/${id}`, body)
@@ -57,41 +62,42 @@ function ReservationForm() {
   };
 
   return (
-    <PageShell>
-      <h1>{id ? 'Edit Reservation' : 'Create Reservation'}</h1>
-      {error && <StatusBanner variant="error">{error}</StatusBanner>}
-      <form onSubmit={handleSubmit}>
-        <div className="field">
-          <label htmlFor="restaurantId">Restaurant</label>
-          <select
-            id="restaurantId"
-            name="restaurantId"
-            value={restaurantId}
-            onChange={(e) => setRestaurantId(e.target.value)}
-          >
-            <option value="">Select a restaurant…</option>
-            {restaurants.map((restaurant) => (
-              <option key={restaurant.id} value={restaurant.id}>
-                {restaurant.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="date">Date</label>
-          <input
-            id="date"
-            name="date"
-            type="datetime-local"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
-        <Button type="submit" loading={submitting}>
-          {id ? 'Update' : 'Create'}
-        </Button>
-      </form>
-    </PageShell>
+    <Container size="sm" py="xl">
+      <Card withBorder shadow="sm" radius="md">
+        <Title order={2} mb="md">
+          {id ? 'Edit Reservation' : 'Create Reservation'}
+        </Title>
+
+        {error && (
+          <Alert color="red" title="Error" mb="md">
+            {error}
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <Stack>
+            <Select
+              label="Restaurant"
+              data={restaurants.map((r) => ({ value: r.id, label: r.name }))}
+              value={restaurantId}
+              onChange={(val) => setRestaurantId(val ?? '')}
+              placeholder="Select a restaurant…"
+            />
+            <DateTimePicker
+              label="Date & Time"
+              value={parseUtcDate(date)}
+              onChange={(val) => setDate(toUtcIso(val))}
+              placeholder="Pick date and time"
+              clearable
+              timeInputProps={{ withSeconds: false }}
+            />
+            <Button type="submit" loading={submitting}>
+              {id ? 'Update' : 'Create'}
+            </Button>
+          </Stack>
+        </form>
+      </Card>
+    </Container>
   );
 }
 

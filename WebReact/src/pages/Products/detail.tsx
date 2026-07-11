@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useRoute, useLocation } from 'wouter';
+import { Container, Card, Title, Text, Button, Group, Loader, Alert } from '@mantine/core';
 import api from '../../lib/api';
-import { Button, PageShell, StatusBanner } from '../../components';
 import { Product } from './types/Product';
 
 function ProductDetail() {
@@ -34,24 +34,40 @@ function ProductDetail() {
       });
   };
 
+  if (error) {
+    return (
+      <Container size="md" py="xl">
+        <Alert color="red" title="Error">
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!product) {
+    return (
+      <Container size="md" py="xl" style={{ display: 'flex', justifyContent: 'center' }}>
+        <Loader color="brand.5" />
+      </Container>
+    );
+  }
+
   return (
-    <PageShell>
-      <h1>Product Details</h1>
-      {error ? (
-        <StatusBanner variant="error">{error}</StatusBanner>
-      ) : !product ? (
-        <StatusBanner variant="loading">Loading product…</StatusBanner>
-      ) : (
-        <>
-          <p>Name: {product.name}</p>
-          <p>Price: ${product.price.toFixed(2)}</p>
-          <Link href={`/products/edit/${product.id}`}>Edit</Link>
-          <Button variant="danger" loading={deleting} onClick={handleDelete}>
+    <Container size="md" py="xl">
+      <Card shadow="sm" radius="md" padding="lg">
+        <Title order={2}>Product Details</Title>
+        <Text mt="sm"><strong>Name:</strong> {product.name}</Text>
+        <Text><strong>Price:</strong> ${product.price.toFixed(2)}</Text>
+        <Group mt="md">
+          <Button component={Link} to={`/products/edit/${product.id}`} variant="light">
+            Edit
+          </Button>
+          <Button color="red" loading={deleting} onClick={handleDelete}>
             Delete
           </Button>
-        </>
-      )}
-    </PageShell>
+        </Group>
+      </Card>
+    </Container>
   );
 }
 

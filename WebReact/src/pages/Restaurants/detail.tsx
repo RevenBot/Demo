@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useRoute, useLocation } from 'wouter';
 import api from '../../lib/api';
-import { Button, PageShell, StatusBanner } from '../../components';
+import { Container, Card, Title, Text, Button, Group, Loader, Alert } from '@mantine/core';
 import { Restaurant } from './types/Restaurant';
 
 function RestaurantDetail() {
@@ -34,25 +34,41 @@ function RestaurantDetail() {
       });
   };
 
+  if (!restaurant && !error) {
+    return (
+      <Container size="md" py="xl">
+        <Loader color="brand.5" />
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container size="md" py="xl">
+        <Alert color="red" title="Error">
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
   return (
-    <PageShell>
-      <h1>Restaurant Details</h1>
-      {error ? (
-        <StatusBanner variant="error">{error}</StatusBanner>
-      ) : !restaurant ? (
-        <StatusBanner variant="loading">Loading restaurant…</StatusBanner>
-      ) : (
-        <>
-          <p>Name: {restaurant.name}</p>
-          <p>Cuisine: {restaurant.cuisine}</p>
-          <p>Borough: {restaurant.borough}</p>
-          <Link href={`/restaurants/edit/${restaurant.id}`}>Edit</Link>
-          <Button variant="danger" loading={deleting} onClick={handleDelete}>
+    <Container size="md" py="xl">
+      <Card shadow="sm" radius="md" padding="lg">
+        <Title order={2}>Restaurant Details</Title>
+        <Text mt="md"><strong>Name:</strong> {restaurant!.name}</Text>
+        <Text><strong>Cuisine:</strong> {restaurant!.cuisine}</Text>
+        <Text><strong>Borough:</strong> {restaurant!.borough}</Text>
+        <Group mt="lg">
+          <Button component={Link} to={`/restaurants/edit/${restaurant!.id}`} variant="light">
+            Edit
+          </Button>
+          <Button color="red" loading={deleting} onClick={handleDelete}>
             Delete
           </Button>
-        </>
-      )}
-    </PageShell>
+        </Group>
+      </Card>
+    </Container>
   );
 }
 

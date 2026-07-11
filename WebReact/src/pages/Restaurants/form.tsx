@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useRoute, useLocation } from 'wouter';
+import { Container, Card, Title, TextInput, Button, Stack, Alert } from '@mantine/core';
 import api from '../../lib/api';
-import { Button, PageShell, StatusBanner, TextField } from '../../components';
 import { Restaurant, RestaurantInput } from './types/Restaurant';
 
 function RestaurantForm() {
@@ -47,28 +47,45 @@ function RestaurantForm() {
   };
 
   return (
-    <PageShell>
-      <h1>{id ? 'Edit Restaurant' : 'Create Restaurant'}</h1>
-      {error && <StatusBanner variant="error">{error}</StatusBanner>}
-      <form onSubmit={handleSubmit}>
-        <TextField label="Name" name="name" value={name} onChange={setName} />
-        <TextField
-          label="Cuisine"
-          name="cuisine"
-          value={cuisine}
-          onChange={setCuisine}
-        />
-        <TextField
-          label="Borough"
-          name="borough"
-          value={borough}
-          onChange={setBorough}
-        />
-        <Button type="submit" loading={submitting}>
-          {id ? 'Update' : 'Create'}
-        </Button>
-      </form>
-    </PageShell>
+    <Container size="sm" py="xl">
+      <Card withBorder shadow="sm" radius="md" p="xl">
+        <Stack gap="md">
+          <Title order={2}>{id ? 'Edit Restaurant' : 'Create Restaurant'}</Title>
+
+          {error && (
+            <Alert color="red" title="Error">
+              {error}
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <Stack gap="md">
+              <TextInput
+                label="Name"
+                placeholder="Restaurant name"
+                value={name}
+                onChange={(e) => setName(e.currentTarget.value)}
+              />
+              <TextInput
+                label="Cuisine"
+                placeholder="Type of cuisine"
+                value={cuisine}
+                onChange={(e) => setCuisine(e.currentTarget.value)}
+              />
+              <TextInput
+                label="Borough"
+                placeholder="Borough or area"
+                value={borough}
+                onChange={(e) => setBorough(e.currentTarget.value)}
+              />
+              <Button type="submit" loading={submitting}>
+                {id ? 'Update' : 'Create'}
+              </Button>
+            </Stack>
+          </form>
+        </Stack>
+      </Card>
+    </Container>
   );
 }
 

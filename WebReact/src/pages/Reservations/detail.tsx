@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useRoute, useLocation } from 'wouter';
+import { Container, Card, Title, Text, Button, Group, Loader, Alert } from '@mantine/core';
 import api from '../../lib/api';
-import { Button, PageShell, StatusBanner } from '../../components';
 import { Reservation } from './types/Reservation';
+import { formatLocalDateTime } from './utils/date';
 
 function ReservationDetail() {
   const [reservation, setReservation] = useState<Reservation | null>(null);
@@ -34,24 +35,40 @@ function ReservationDetail() {
       });
   };
 
+  if (error) {
+    return (
+      <Container size="md" py="xl">
+        <Alert color="red" title="Error">
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!reservation) {
+    return (
+      <Container size="md" py="xl" style={{ display: 'flex', justifyContent: 'center' }}>
+        <Loader color="brand.5" />
+      </Container>
+    );
+  }
+
   return (
-    <PageShell>
-      <h1>Reservation Details</h1>
-      {error ? (
-        <StatusBanner variant="error">{error}</StatusBanner>
-      ) : !reservation ? (
-        <StatusBanner variant="loading">Loading reservation…</StatusBanner>
-      ) : (
-        <>
-          <p>Restaurant: {reservation.restaurantName ?? reservation.restaurantId}</p>
-          <p>Date: {reservation.date}</p>
-          <Link href={`/reservations/edit/${reservation.id}`}>Edit</Link>
-          <Button variant="danger" loading={deleting} onClick={handleDelete}>
+    <Container size="md" py="xl">
+      <Card shadow="sm" radius="md" padding="lg">
+        <Title order={2}>Reservation Details</Title>
+        <Text mt="md">Restaurant: {reservation.restaurantName ?? reservation.restaurantId}</Text>
+        <Text>Date: {formatLocalDateTime(reservation.date)}</Text>
+        <Group mt="md">
+          <Button component={Link} to={`/reservations/edit/${reservation.id}`} variant="light">
+            Edit
+          </Button>
+          <Button color="red" loading={deleting} onClick={handleDelete}>
             Delete
           </Button>
-        </>
-      )}
-    </PageShell>
+        </Group>
+      </Card>
+    </Container>
   );
 }
 
