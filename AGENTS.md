@@ -10,7 +10,7 @@ Monorepo with two projects orchestrated by `docker-compose.yml`:
   - Solution: `WebAPI/WebAPI.sln`
   - App: `WebAPI/WebAPI/WebAPI.csproj`
   - Tests: `WebAPI/WebAPI.Tests/WebAPI.Tests.csproj` (xUnit + Moq + EF Core InMemory)
-- `WebReact/` — React 18 + TypeScript + Vite 5 frontend
+- `WebReact/` — React 18 + TypeScript + Vite 5 frontend (design system in `WebReact/DESIGN.md`)
 - `docker-compose.yml` — `myapi` (WebAPI), `webreact` (nginx), `mysql:8.0`, `mongodb`
 
 ## Commands
